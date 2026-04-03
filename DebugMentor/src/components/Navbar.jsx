@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 
 const LANGUAGES = ['python', 'cpp', 'java', 'javascript']
 
-export default function Navbar({ language, onLanguageChange }) {
+export default function Navbar({ language, onLanguageChange, backendOnline = true }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [sessionTime, setSessionTime] = useState(0)
   const { theme, toggleTheme } = useTheme()
@@ -46,6 +46,37 @@ export default function Navbar({ language, onLanguageChange }) {
         <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>#42</span>
         <span style={{ color: 'var(--text-secondary)' }}>—</span>
         <span style={{ color: 'var(--text-primary)' }}>Array Edge Cases</span>
+      </div>
+
+      {/* Backend status badge */}
+      <div
+        title={backendOnline
+          ? 'Backend connected — real execution active'
+          : 'Backend offline — using local mock analysis'}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          background: backendOnline ? 'rgba(79,255,176,0.08)' : 'rgba(255,95,109,0.08)',
+          border: `1px solid ${backendOnline ? 'rgba(79,255,176,0.25)' : 'rgba(255,95,109,0.25)'}`,
+          borderRadius: 10,
+          padding: '3px 10px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          color: backendOnline ? 'var(--accent-primary)' : 'var(--accent-danger)',
+          cursor: 'default',
+          userSelect: 'none',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: backendOnline ? 'var(--accent-primary)' : 'var(--accent-danger)',
+          display: 'inline-block',
+          boxShadow: backendOnline ? '0 0 6px var(--accent-primary)' : 'none',
+          animation: backendOnline ? 'pulse 2s infinite' : 'none',
+        }} />
+        {backendOnline ? 'API Live' : 'Offline Mode'}
       </div>
 
       {/* Language Selector */}

@@ -147,39 +147,7 @@ export const scenario_noBugs = {
   ]
 }
 
-// ─── Run output map per scenario & language ──────────────────────────────────
-export const runOutputMap = {
-  empty_array: {
-    python:     { success: false, output: "IndexError: list index out of range\n  File \"solution.py\", line 3, in find_max\n    max_val = arr[0]", execTime: "0.002s" },
-    cpp:        { success: false, output: "Segmentation fault (core dumped)", execTime: "0.001s" },
-    java:       { success: false, output: "ArrayIndexOutOfBoundsException: Index 0 out of bounds for length 0", execTime: "0.007s" },
-    javascript: { success: false, output: "TypeError: Cannot read properties of undefined (reading 'toString')", execTime: "0.003s" },
-  },
-  off_by_one: {
-    python:     { success: true, output: "3", execTime: "0.002s" },
-    cpp:        { success: true, output: "3", execTime: "0.001s" },
-    java:       { success: true, output: "3", execTime: "0.008s" },
-    javascript: { success: true, output: "3", execTime: "0.002s" },
-  },
-  recursion: {
-    python:     { success: false, output: "RecursionError: maximum recursion depth exceeded in comparison", execTime: "2.100s" },
-    cpp:        { success: false, output: "Segmentation fault — stack overflow", execTime: "0.500s" },
-    java:       { success: false, output: "StackOverflowError at Solution.factorial(Solution.java:5)", execTime: "1.200s" },
-    javascript: { success: false, output: "RangeError: Maximum call stack size exceeded", execTime: "1.800s" },
-  },
-  sort_bug: {
-    python:     { success: true, output: "[5, 4, 3, 1, 1]", execTime: "0.003s" },
-    cpp:        { success: true, output: "5 4 3 1 1", execTime: "0.001s" },
-    java:       { success: true, output: "[5, 4, 3, 1, 1]", execTime: "0.009s" },
-    javascript: { success: true, output: "[5, 4, 3, 1, 1]", execTime: "0.002s" },
-  },
-  no_bugs: {
-    python:     { success: true, output: "9", execTime: "0.002s" },
-    cpp:        { success: true, output: "9", execTime: "0.001s" },
-    java:       { success: true, output: "9", execTime: "0.007s" },
-    javascript: { success: true, output: "9", execTime: "0.002s" },
-  }
-}
+
 
 // ─── Pattern detector ────────────────────────────────────────────────────────
 export function detectScenario(code) {
@@ -348,3 +316,38 @@ export const languageConfig = {
 
 // Legacy export
 export const mockAnalysisResult = scenario_emptyArray
+
+// ─── Run output fallback map (used when backend is offline) ──────────────────
+// Shape: { scenario_id: { language: { success, output, execTime } } }
+export const runOutputMap = {
+  empty_array: {
+    python:     { success: false, output: 'Traceback (most recent call last):\n  File "<string>", line 2, in find_max\nIndexError: list index out of range', execTime: '0.012s' },
+    cpp:        { success: false, output: 'Runtime error: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)', execTime: '—' },
+    java:       { success: false, output: 'Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: Index 0 out of bounds for length 0', execTime: '—' },
+    javascript: { success: false, output: 'TypeError: Cannot read properties of undefined (reading undefined)\n    at findMax (<anonymous>:2:18)', execTime: '—' },
+  },
+  off_by_one: {
+    python:     { success: true,  output: '>>> find_max([1,2,3,10]) → 3  ✗ (expected 10)\n>>> find_max([5,3,8,1])  → 5  ✗ (expected 8)', execTime: '0.008s' },
+    cpp:        { success: true,  output: 'Output: 3 (expected: 10) — off-by-one in loop bound', execTime: '—' },
+    java:       { success: true,  output: 'Result: 3 (expected 10) — loop terminates one iteration early', execTime: '—' },
+    javascript: { success: true,  output: 'Output: 3 (expected: 10) — array.length - 1 skips last element', execTime: '—' },
+  },
+  recursion: {
+    python:     { success: false, output: 'Traceback (most recent call last):\n  ...\nRecursionError: maximum recursion depth exceeded', execTime: '2.341s' },
+    cpp:        { success: false, output: 'Segmentation fault (core dumped) — stack overflow from infinite recursion', execTime: '—' },
+    java:       { success: false, output: 'Exception in thread "main" java.lang.StackOverflowError', execTime: '—' },
+    javascript: { success: false, output: 'RangeError: Maximum call stack size exceeded', execTime: '—' },
+  },
+  sort_bug: {
+    python:     { success: true,  output: '>>> bubble_sort([3,1,4,1,5]) → [5,4,3,1,1]  ✗\n(sorted descending instead of ascending)', execTime: '0.015s' },
+    cpp:        { success: true,  output: 'Output: [5, 4, 3, 1, 1] (expected ascending order)', execTime: '—' },
+    java:       { success: true,  output: 'Sorted: [5, 4, 3, 1, 1] — comparison operator reversed', execTime: '—' },
+    javascript: { success: true,  output: '[5,4,3,1,1] — sorts descending due to wrong comparison', execTime: '—' },
+  },
+  clean: {
+    python:     { success: true,  output: '>>> find_max([3,1,4,1,5]) → 5  ✓\n>>> find_max([])          → None  ✓\n>>> find_max([-1,-5,-2])  → -1  ✓', execTime: '0.007s' },
+    cpp:        { success: true,  output: 'All test cases passed. Output: 5, -1, 1', execTime: '—' },
+    java:       { success: true,  output: 'Tests passed: 4/4. Results: 5, null, -1, 1', execTime: '—' },
+    javascript: { success: true,  output: 'All assertions passed. find_max([3,1,4,1,5]) === 5 ✓', execTime: '—' },
+  },
+}

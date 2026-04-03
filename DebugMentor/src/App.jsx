@@ -21,6 +21,7 @@ export default function App() {
     isRunning,
     analysisResult,
     runResult,
+    backendOnline,
     runCode,
     submitForAnalysis,
   } = useAnalysis()
@@ -89,6 +90,7 @@ export default function App() {
       <Navbar
         language={language}
         onLanguageChange={handleLanguageChange}
+        backendOnline={backendOnline}
       />
 
       {/* ── Main workspace ── */}
