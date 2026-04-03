@@ -1,0 +1,18 @@
+# ── Web framework ─────────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# ── Database ──────────────────────────────────────────────────────
+sqlalchemy==2.0.36
+alembic==1.13.3
+psycopg2-binary==2.9.10
+
+# ── Validation & settings ─────────────────────────────────────────
+pydantic==2.9.2
+pydantic[email]
+python-dotenv==1.0.1
+
+# ── Dev utilities ─────────────────────────────────────────────────
+# httpx           # for async test client (Phase 2 testing)
+# pytest          # test runner         (Phase 2)
+# pytest-asyncio  # async tests         (Phase 2)
