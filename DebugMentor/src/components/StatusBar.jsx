@@ -1,7 +1,7 @@
 // StatusBar.jsx
 import { languageConfig } from '../data/mockData'
 
-export default function StatusBar({ language, editorMode, isAnalyzing, analysisResult }) {
+export default function StatusBar({ language, isAnalyzing, analysisResult }) {
   const cfg = languageConfig[language]
 
   let statusClass = 'ready'
@@ -30,22 +30,7 @@ export default function StatusBar({ language, editorMode, isAnalyzing, analysisR
         {cfg.label} {cfg.version}
       </div>
 
-      {/* Editor mode pill */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 5,
-        background: editorMode === 'focused' ? 'rgba(79,255,176,0.06)' : 'rgba(255,179,71,0.06)',
-        border: `1px solid ${editorMode === 'focused' ? 'rgba(79,255,176,0.2)' : 'rgba(255,179,71,0.2)'}`,
-        borderRadius: 10,
-        padding: '2px 8px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: 11,
-        color: editorMode === 'focused' ? 'var(--accent-primary)' : 'var(--accent-secondary)',
-        transition: 'all 0.3s ease',
-      }}>
-        {editorMode === 'focused' ? '⚡ Focused' : '📄 Full Code'}
-      </div>
+
 
       {/* Error count */}
       <div style={{

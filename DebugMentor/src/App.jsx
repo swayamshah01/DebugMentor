@@ -8,10 +8,9 @@ import { useAnalysis } from './hooks/useAnalysis'
 
 export default function App() {
   // ── Core state ──────────────────────────────────────────
-  const [language,    setLanguage]    = useState('python')
-  const [focusedCode, setFocusedCode] = useState(starterCode.python.focused)
-  const [editorMode,  setEditorMode]  = useState('focused')  // 'focused' | 'complete'
-  const [activeTab,   setActiveTab]   = useState('hints')
+  const [language, setLanguage] = useState('python')
+  const [code, setCode] = useState(() => wrapInBoilerplate(starterCode.python.focused, 'python'))
+  const [activeTab, setActiveTab] = useState('hints')
   const [revealedHints, setRevealedHints] = useState(0)
   const [showSolutionModal, setShowSolutionModal] = useState(false)
 
@@ -26,47 +25,28 @@ export default function App() {
     submitForAnalysis,
   } = useAnalysis()
 
-  // ── Computed display code for Monaco ─────────────────────
-  // In 'focused' mode: show just the function
-  // In 'complete' mode: show the full wrapped boilerplate (read-only)
-  const displayCode = getDisplayCode(language, editorMode, focusedCode)
-
   // ── Handlers ─────────────────────────────────────────────
   const handleLanguageChange = useCallback((lang) => {
     setLanguage(lang)
-    setFocusedCode(starterCode[lang].focused)
-    setEditorMode('focused')  // reset to focused when language changes
+    setCode(wrapInBoilerplate(starterCode[lang].focused, lang))
   }, [])
 
   const handleCodeChange = useCallback((val) => {
-    // Only update when in focused mode (complete mode is read-only)
-    setFocusedCode(val || '')
-  }, [])
-
-  const handleModeChange = useCallback((newMode) => {
-    setEditorMode(newMode)
+    setCode(val || '')
   }, [])
 
   const handleRun = useCallback(() => {
     setActiveTab('output')
-    // Always run the fully wrapped code
-    const finalCode = editorMode === 'focused'
-      ? wrapInBoilerplate(focusedCode, language)
-      : focusedCode
-    runCode(finalCode, language)
-  }, [editorMode, focusedCode, language, runCode])
+    runCode(code, language)
+  }, [code, language, runCode])
 
   const handleSubmit = useCallback(() => {
     setActiveTab('hints')
     setRevealedHints(0)
-    // Always submit the full code — backend always receives a valid, runnable script
-    const finalCode = editorMode === 'focused'
-      ? wrapInBoilerplate(focusedCode, language)
-      : focusedCode
-    submitForAnalysis(finalCode, language, (scenario) => {
+    submitForAnalysis(code, language, (scenario) => {
       setRevealedHints(scenario?.status === 'clean' ? 3 : 1)
     })
-  }, [editorMode, focusedCode, language, submitForAnalysis])
+  }, [code, language, submitForAnalysis])
 
   const handleNextHint = useCallback(() => {
     setRevealedHints(prev => {
@@ -97,15 +77,13 @@ export default function App() {
       <div className="main-workspace">
         {/* Left: Code Editor */}
         <CodeEditorPanel
-          code={displayCode}
+          code={code}
           language={language}
-          editorMode={editorMode}
           isAnalyzing={isAnalyzing}
           isRunning={isRunning}
           onCodeChange={handleCodeChange}
           onRun={handleRun}
           onSubmit={handleSubmit}
-          onModeChange={handleModeChange}
         />
 
         {/* Divider */}
@@ -131,7 +109,6 @@ export default function App() {
       {/* ── Status Bar ── */}
       <StatusBar
         language={language}
-        editorMode={editorMode}
         isAnalyzing={isAnalyzing}
         analysisResult={analysisResult}
       />

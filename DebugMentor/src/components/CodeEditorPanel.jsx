@@ -76,10 +76,9 @@ export default function CodeEditorPanel({
   editorMode,     // 'focused' | 'complete'
   isAnalyzing,
   isRunning,
-  onCodeChange,   // called only when in focused mode
+  onCodeChange,
   onRun,
   onSubmit,
-  onModeChange,   // (newMode) => void
 }) {
   const editorRef  = useRef(null)
   const monacoRef  = useRef(null)
@@ -87,7 +86,6 @@ export default function CodeEditorPanel({
   const { theme } = useTheme()
   const cfg        = languageConfig[language]
   const fileName   = fileNames[language] || 'solution.py'
-  const isFocused  = editorMode === 'focused'
 
   // ─── Apply correct Monaco theme whenever app theme changes ────────────────
   const handleEditorMount = useCallback((editor, monaco) => {
@@ -133,21 +131,6 @@ export default function CodeEditorPanel({
         <span className="crumb-sep">/</span>
         <span className="crumb-file">{fileName}</span>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Editor mode badge */}
-          <span style={{
-            background: isFocused ? 'rgba(79,255,176,0.08)' : 'rgba(255,179,71,0.08)',
-            border: `1px solid ${isFocused ? 'rgba(79,255,176,0.25)' : 'rgba(255,179,71,0.25)'}`,
-            borderRadius: 4,
-            padding: '2px 8px',
-            color: isFocused ? 'var(--accent-primary)' : 'var(--accent-secondary)',
-            fontSize: 11,
-            fontFamily: 'var(--font-mono)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5
-          }}>
-            {isFocused ? '⚡ Focused' : '📄 Full Boilerplate'}
-          </span>
           <span style={{
             background: 'rgba(255,95,109,0.1)',
             border: '1px solid rgba(255,95,109,0.3)',
@@ -165,40 +148,6 @@ export default function CodeEditorPanel({
         </span>
       </div>
 
-      {/* ── Complete-mode read-only banner ───────────────────── */}
-      {!isFocused && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          background: 'rgba(255,179,71,0.06)',
-          borderBottom: '1px solid rgba(255,179,71,0.2)',
-          padding: '6px 16px',
-          fontSize: 12,
-          fontFamily: 'var(--font-body)',
-          color: 'var(--accent-secondary)',
-          flexShrink: 0
-        }}>
-          <span>📄</span>
-          <span>Full boilerplate preview — switch to <strong>Focused</strong> mode to edit your function</span>
-          <button
-            onClick={() => onModeChange('focused')}
-            style={{
-              marginLeft: 'auto',
-              background: 'rgba(255,179,71,0.12)',
-              border: '1px solid rgba(255,179,71,0.3)',
-              borderRadius: 4,
-              padding: '2px 10px',
-              fontSize: 11,
-              color: 'var(--accent-secondary)',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-body)',
-            }}
-          >
-            ← Back to Focused
-          </button>
-        </div>
-      )}
 
       {/* ── Monaco Editor ────────────────────────────────────── */}
       <div className="editor-container">
@@ -207,7 +156,7 @@ export default function CodeEditorPanel({
           language={cfg.monacoLang}
           value={code}
           theme={monacoTheme}
-          onChange={v => isFocused && onCodeChange(v || '')}
+          onChange={v => onCodeChange(v || '')}
           onMount={handleEditorMount}
           options={{
             fontSize: 14,
@@ -216,10 +165,10 @@ export default function CodeEditorPanel({
             lineNumbers: 'on',
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
-            readOnly: !isFocused,
+            readOnly: false,
             renderWhitespace: 'selection',
             smoothScrolling: true,
-            cursorBlinking: isFocused ? 'phase' : 'solid',
+            cursorBlinking: 'phase',
             cursorSmoothCaretAnimation: 'on',
             padding: { top: 16, bottom: 16 },
             lineDecorationsWidth: 8,
@@ -228,7 +177,7 @@ export default function CodeEditorPanel({
             tabSize: 4,
             insertSpaces: true,
             wordWrap: 'off',
-            renderLineHighlight: isFocused ? 'gutter' : 'none',
+            renderLineHighlight: 'gutter',
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             scrollbar: {
@@ -254,58 +203,6 @@ export default function CodeEditorPanel({
           {cfg.label}
         </div>
 
-        {/* ── Editor Mode Toggle (pill) ─────────────────────── */}
-        <div
-          id="editor-mode-toggle"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-bright)',
-            borderRadius: 20,
-            padding: 3,
-            gap: 2,
-          }}
-        >
-          <button
-            id="mode-focused-btn"
-            onClick={() => onModeChange('focused')}
-            style={{
-              border: 'none',
-              borderRadius: 14,
-              padding: '4px 12px',
-              fontSize: 12,
-              fontFamily: 'var(--font-body)',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: isFocused ? 'var(--accent-primary)' : 'transparent',
-              color: isFocused ? '#0D0F14' : 'var(--text-secondary)',
-              boxShadow: isFocused ? '0 0 10px rgba(79,255,176,0.3)' : 'none',
-            }}
-          >
-            ⚡ Focused
-          </button>
-          <button
-            id="mode-complete-btn"
-            onClick={() => onModeChange('complete')}
-            style={{
-              border: 'none',
-              borderRadius: 14,
-              padding: '4px 12px',
-              fontSize: 12,
-              fontFamily: 'var(--font-body)',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: !isFocused ? 'var(--accent-secondary)' : 'transparent',
-              color: !isFocused ? '#0D0F14' : 'var(--text-secondary)',
-              boxShadow: !isFocused ? '0 0 10px rgba(255,179,71,0.3)' : 'none',
-            }}
-          >
-            📄 Full Code
-          </button>
-        </div>
 
         <button
           id="btn-run-code"
@@ -353,8 +250,8 @@ export default function CodeEditorPanel({
         <span>⚡</span>
         <span>Ln {lineCol.line}, Col {lineCol.col}</span>
         <span style={{ color: 'var(--border-bright)' }}>·</span>
-        <span style={{ color: isFocused ? 'var(--accent-primary)' : 'var(--accent-secondary)' }}>
-          {isFocused ? 'Focused Mode' : 'Full Boilerplate'}
+        <span style={{ color: 'var(--text-secondary)' }}>
+          Standard Mode
         </span>
         <span style={{ marginLeft: 'auto' }}>UTF-8</span>
       </div>
