@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import submit, users, run   # ← added run
+from app.routers import submit, users, run
+from app import auth
 from app.database import Base, engine
 
 # Create tables on startup (remove once Alembic handles all migrations)
@@ -35,6 +36,7 @@ app.add_middleware(
 app.include_router(submit.router, prefix="/api", tags=["Submissions"])
 app.include_router(run.router,    prefix="/api", tags=["Execution"])
 app.include_router(users.router,  prefix="/api", tags=["Users"])
+app.include_router(auth.router,   prefix="/api", tags=["Auth"])
 
 
 @app.get("/health", tags=["Health"])

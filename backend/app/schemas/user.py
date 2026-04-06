@@ -2,6 +2,13 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from datetime import datetime
 from typing import Optional
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    user_id: Optional[int] = None
+
 
 class UserCreate(BaseModel):
     """
@@ -9,6 +16,7 @@ class UserCreate(BaseModel):
     """
     username: str
     email: EmailStr
+    password: str
 
 
 class UserResponse(BaseModel):

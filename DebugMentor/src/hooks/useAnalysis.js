@@ -18,24 +18,20 @@ const API_BASE = 'http://localhost:8000/api'
 function transformAnalysis(backendResult) {
   if (!backendResult) return null
   return {
-    // Match the shape HintsTab / TestCasesTab / StatusBar expect
     status:          backendResult.status,
-    bugSummary:      backendResult.bug_summary,
-    errorLine:       backendResult.error_line   ?? null,
-    executionOutput: backendResult.execution_output ?? '',
-    hints:           backendResult.hints      ?? [],
-    testCases:       (backendResult.test_cases ?? []).map(tc => ({
-      id:       tc.id,
-      input:    tc.input,
-      expected: tc.expected,
-      actual:   tc.actual,
-      passed:   tc.passed,
-    })),
+    bugSummary:      backendResult.error_message || '',
+    errorLine:       null,
+    executionOutput: backendResult.actual_output || backendResult.error_message || '',
+    hints:           backendResult.feedback ? [{ level: 0, text: backendResult.feedback }] : [],
+    testCases:       [],
+    exitCode:        backendResult.exit_code,
+    timedOut:        backendResult.timed_out,
+    executionTimeMs: backendResult.execution_time_ms,
   }
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
-export function useAnalysis() {
+export function useAnalysis(token, setToken) {
   const [isAnalyzing,    setIsAnalyzing]    = useState(false)
   const [isRunning,      setIsRunning]      = useState(false)
   const [analysisResult, setAnalysisResult] = useState(null)
@@ -53,6 +49,7 @@ export function useAnalysis() {
 
     try {
       const { data } = await axios.post(`${API_BASE}/run`, { code, language }, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         timeout: 15000,
       })
       setBackendOnline(true)
@@ -62,6 +59,12 @@ export function useAnalysis() {
         execTime: data.exec_time,
       })
     } catch (err) {
+      if (err.response?.status === 401 && setToken) {
+        localStorage.removeItem('token')
+        setToken(null)
+        setIsRunning(false)
+        return
+      }
       console.warn('[DebugMentor] Backend unreachable for /run — using mock output', err.message)
       setBackendOnline(false)
       // ── Fallback: use mock output map ──────────────────────────────────────
@@ -86,20 +89,37 @@ export function useAnalysis() {
       const { data } = await axios.post(`${API_BASE}/submit`, {
         code,
         language,
-        user_id: 1,   // Phase 2: use authenticated user ID from session
+        test_input: "",
       }, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         timeout: 30000,   // 30s — Python execution can take a few seconds
       })
 
       setBackendOnline(true)
 
-      // data.analysis_result has the full structured result from the backend
-      const result = transformAnalysis(data.analysis_result)
+      // Transform the root response data directly
+      const result = transformAnalysis(data)
       setAnalysisResult(result)
+      
+      // Sync execution result to the output panel
+      setRunResult({
+        success: result.exitCode === 0 && !result.timedOut,
+        output: result.timedOut 
+          ? "Timed out after 5 seconds." 
+          : (result.exitCode === 0 ? result.executionOutput : result.bugSummary),
+        execTime: `${result.executionTimeMs}ms`
+      })
+      
       setIsAnalyzing(false)
       if (onComplete) onComplete(result)
 
     } catch (err) {
+      if (err.response?.status === 401 && setToken) {
+        localStorage.removeItem('token')
+        setToken(null)
+        setIsAnalyzing(false)
+        return
+      }
       console.warn('[DebugMentor] Backend unreachable for /submit — using mock', err.message)
       setBackendOnline(false)
 

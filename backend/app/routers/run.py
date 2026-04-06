@@ -10,8 +10,11 @@ import sys
 import time
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from app.auth import get_current_user
+from app.models.user import User
+from app.engines.executor import run_code as engine_run_code
 
 logger = logging.getLogger(__name__)
 
@@ -40,60 +43,36 @@ class RunResponse(BaseModel):
         "Other languages require a compiler — coming in Phase 2."
     ),
 )
-def run_code(payload: RunRequest) -> RunResponse:
+def run_code(
+    payload: RunRequest,
+    current_user: User = Depends(get_current_user)
+) -> RunResponse:
     """POST /api/run"""
     lang = payload.language.lower()
-
-    if lang != "python":
-        return RunResponse(
-            success=False,
-            output=(
-                f"Runtime execution for {payload.language} requires a compiler.\n"
-                "Phase 2 will add sandboxed Docker execution for C++, Java, and JavaScript.\n\n"
-                "To test, switch to Python in the language selector."
-            ),
-            exec_time="—",
-            language=payload.language,
-        )
-
-    # ── Python: subprocess execution ──────────────────────────────────────────
-    logger.info("Running Python code (%d chars)", len(payload.code))
-    start = time.monotonic()
+    logger.info("Running code (%d chars) for language: %s", len(payload.code), lang)
 
     try:
-        proc = subprocess.run(
-            [sys.executable, "-c", payload.code],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        elapsed = f"{time.monotonic() - start:.3f}s"
-
-        if proc.returncode == 0:
-            output = proc.stdout or "(program produced no output)"
-            return RunResponse(
-                success=True,
-                output=output,
-                exec_time=elapsed,
-                language=lang,
-            )
+        result = engine_run_code(user_code=payload.code, language=lang)
+        
+        success = result.get("exit_code") == 0 and not result.get("timed_out")
+        
+        if result.get("timed_out"):
+            output = result.get("error_message") or "Execution timed out."
+        elif not success:
+            output = result.get("error_message") or "Process exited with a non-zero status."
         else:
-            # Return full stderr so student sees the real traceback
-            output = proc.stderr.strip() or "Process exited with a non-zero status."
-            return RunResponse(
-                success=False,
-                output=output,
-                exec_time=elapsed,
-                language=lang,
-            )
-
-    except subprocess.TimeoutExpired:
+            output = result.get("actual_output") or "(program produced no output)"
+            
+        elapsed = f"{result.get('execution_time_ms', 0) / 1000:.3f}s"
+        
         return RunResponse(
-            success=False,
-            output="Execution timed out — your code ran for more than 10 seconds.\nCheck for infinite loops or unbounded recursion.",
-            exec_time="10.000s",
+            success=success,
+            output=output,
+            exec_time=elapsed,
             language=lang,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.error("run_code error: %s", exc, exc_info=True)
         return RunResponse(

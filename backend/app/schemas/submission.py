@@ -9,7 +9,8 @@ class SubmissionCreate(BaseModel):
     """
     code: str
     language: str
-    user_id: int
+    user_id: Optional[int] = None
+    test_input: Optional[str] = ""
 
 
 class SubmissionResponse(BaseModel):
@@ -31,4 +32,9 @@ class SubmissionResponse(BaseModel):
     hint_level:      int
     status:          str
     feedback:        Optional[str] = None
+    exit_code:       Optional[int] = None
+    actual_output:   Optional[str] = None
+    error_message:   Optional[str] = None
+    execution_time_ms: Optional[int] = None
+    timed_out:       Optional[bool] = None
     analysis_result: Optional[Any] = None   # full structured result for the frontend

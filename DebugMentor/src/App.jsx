@@ -3,11 +3,32 @@ import Navbar from './components/Navbar'
 import CodeEditorPanel from './components/CodeEditorPanel'
 import OutputPanel from './components/OutputPanel'
 import StatusBar from './components/StatusBar'
-import { starterCode, getDisplayCode, wrapInBoilerplate } from './data/mockData'
+import Auth from './components/Auth'
+import LandingPage from './components/LandingPage'
+import { starterCode, wrapInBoilerplate } from './data/mockData'
 import { useAnalysis } from './hooks/useAnalysis'
 
+// ── Screens ───────────────────────────────────────────────────
+// 'landing' → 'auth' → 'app'
+
 export default function App() {
-  // ── Core state ──────────────────────────────────────────
+  // ── Auth / navigation state ──────────────────────────────
+  const [token, setToken] = useState(() => localStorage.getItem('token'))
+  const [username, setUsername] = useState(() => {
+    // Try to decode username from stored token
+    const t = localStorage.getItem('token')
+    if (!t) return null
+    try {
+      const payload = JSON.parse(atob(t.split('.')[1]))
+      return payload.username || localStorage.getItem('username') || null
+    } catch {
+      return localStorage.getItem('username') || null
+    }
+  })
+  // If token exists, go straight to 'app'. Otherwise show 'landing'.
+  const [screen, setScreen] = useState(() => token ? 'app' : 'landing')
+
+  // ── Core editor state ────────────────────────────────────
   const [language, setLanguage] = useState('python')
   const [code, setCode] = useState(() => wrapInBoilerplate(starterCode.python.focused, 'python'))
   const [activeTab, setActiveTab] = useState('hints')
@@ -23,17 +44,30 @@ export default function App() {
     backendOnline,
     runCode,
     submitForAnalysis,
-  } = useAnalysis()
+  } = useAnalysis(token, setToken)
 
-  // ── Handlers ─────────────────────────────────────────────
+  // ── Auth handlers ─────────────────────────────────────────
+  const handleTokenSet = useCallback((newToken) => {
+    setToken(newToken)
+    setScreen('app')
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    if (!window.confirm('Are you sure you want to logout?')) return
+    localStorage.removeItem('token')
+    localStorage.removeItem('username')
+    setToken(null)
+    setUsername(null)
+    setScreen('landing')
+  }, [])
+
+  // ── Editor handlers ───────────────────────────────────────
   const handleLanguageChange = useCallback((lang) => {
     setLanguage(lang)
     setCode(wrapInBoilerplate(starterCode[lang].focused, lang))
   }, [])
 
-  const handleCodeChange = useCallback((val) => {
-    setCode(val || '')
-  }, [])
+  const handleCodeChange = useCallback((val) => setCode(val || ''), [])
 
   const handleRun = useCallback(() => {
     setActiveTab('output')
@@ -51,10 +85,7 @@ export default function App() {
   const handleNextHint = useCallback(() => {
     setRevealedHints(prev => {
       const next = prev + 1
-      if (next >= 3) {
-        setShowSolutionModal(true)
-        return prev
-      }
+      if (next >= 3) { setShowSolutionModal(true); return prev }
       return next
     })
   }, [])
@@ -64,18 +95,33 @@ export default function App() {
     setRevealedHints(3)
   }, [])
 
+  // ── Screen routing ────────────────────────────────────────
+  if (screen === 'landing') {
+    return <LandingPage onGetStarted={() => setScreen('auth')} />
+  }
+
+  if (screen === 'auth') {
+    return (
+      <Auth
+        setToken={handleTokenSet}
+        setUsername={setUsername}
+        onBackToLanding={() => setScreen('landing')}
+      />
+    )
+  }
+
+  // ── Main IDE ──────────────────────────────────────────────
   return (
     <div className="app-shell">
-      {/* ── Navbar ── */}
       <Navbar
         language={language}
         onLanguageChange={handleLanguageChange}
         backendOnline={backendOnline}
+        username={username}
+        onLogout={handleLogout}
       />
 
-      {/* ── Main workspace ── */}
       <div className="main-workspace">
-        {/* Left: Code Editor */}
         <CodeEditorPanel
           code={code}
           language={language}
@@ -85,11 +131,7 @@ export default function App() {
           onRun={handleRun}
           onSubmit={handleSubmit}
         />
-
-        {/* Divider */}
         <div className="panel-divider" />
-
-        {/* Right: Output / Hints / Tests */}
         <OutputPanel
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -106,7 +148,6 @@ export default function App() {
         />
       </div>
 
-      {/* ── Status Bar ── */}
       <StatusBar
         language={language}
         isAnalyzing={isAnalyzing}
