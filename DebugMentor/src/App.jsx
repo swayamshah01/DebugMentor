@@ -125,6 +125,7 @@ export default function App() {
     }
     const firstVisible = detail?.test_cases?.[0]
     setSelectedVisibleTestCaseId(firstVisible?.id ?? null)
+    setActiveTab('tests')
     setProblemLoading(false)
   }, [fetchProblemDetail, language, reset])
 

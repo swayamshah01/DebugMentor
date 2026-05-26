@@ -1,4 +1,10 @@
-export function TestCasesTab({ analysisResult, isAnalyzing }) {
+export function TestCasesTab({
+  problem,
+  analysisResult,
+  isAnalyzing,
+  selectedVisibleTestCaseId,
+  onSelectVisibleTestCase,
+}) {
   if (isAnalyzing) {
     return (
       <div className="fade-in">
@@ -9,12 +15,50 @@ export function TestCasesTab({ analysisResult, isAnalyzing }) {
   }
 
   if (!analysisResult) {
+    const visibleTests = problem?.test_cases || []
+
     return (
-      <div className="empty-state">
-        <div className="empty-title">No official results yet</div>
-        <div className="empty-desc">
-          Submit the current problem to run the official visible and hidden cases.
+      <div className="fade-in">
+        <div className="testcase-tabs">
+          {visibleTests.map((testCase, index) => (
+            <button
+              key={testCase.id}
+              type="button"
+              className={`testcase-tab ${selectedVisibleTestCaseId === testCase.id ? 'active' : ''}`}
+              onClick={() => onSelectVisibleTestCase && onSelectVisibleTestCase(testCase)}
+            >
+              Case {index + 1}
+            </button>
+          ))}
         </div>
+
+        {visibleTests.length > 0 ? (
+          <div className="leetcode-case-list">
+            {visibleTests.map((testCase, index) => (
+              <button
+                key={testCase.id}
+                type="button"
+                className={`leetcode-case-card ${selectedVisibleTestCaseId === testCase.id ? 'active' : ''}`}
+                onClick={() => onSelectVisibleTestCase && onSelectVisibleTestCase(testCase)}
+              >
+                <div className="case-card-title">Case {index + 1}</div>
+                <div className="case-field">
+                  <div className="case-label">Input</div>
+                  <pre>{testCase.input}</pre>
+                </div>
+                <div className="case-field">
+                  <div className="case-label">Expected</div>
+                  <pre>{testCase.expected_output}</pre>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state compact">
+            <div className="empty-title">No sample cases</div>
+            <div className="empty-desc">Choose a problem with visible tests.</div>
+          </div>
+        )}
       </div>
     )
   }

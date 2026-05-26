@@ -1,4 +1,4 @@
-export default function ProblemStatement({ problem, loading, selectedVisibleTestCaseId, onSelectVisibleTestCase }) {
+export default function ProblemStatement({ problem, loading }) {
   if (loading) {
     return (
       <section className="problem-statement-panel">
@@ -50,23 +50,6 @@ export default function ProblemStatement({ problem, loading, selectedVisibleTest
         </div>
       )}
 
-      {Array.isArray(problem.test_cases) && problem.test_cases.length > 0 && (
-        <div className="examples-block">
-          <div className="info-label">Visible tests</div>
-          {problem.test_cases.map((testCase) => (
-            <button
-              key={testCase.id}
-              type="button"
-              className={`example-card example-card-button ${selectedVisibleTestCaseId === testCase.id ? 'active' : ''}`}
-              onClick={() => onSelectVisibleTestCase && onSelectVisibleTestCase(testCase)}
-            >
-              <div><strong>{testCase.label}</strong></div>
-              <div><strong>Input:</strong> {testCase.input}</div>
-              <div><strong>Expected:</strong> {testCase.expected_output}</div>
-            </button>
-          ))}
-        </div>
-      )}
     </section>
   )
 }

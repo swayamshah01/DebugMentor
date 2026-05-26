@@ -19,6 +19,116 @@ sys.path.insert(0, ".")
 LANGUAGES = ("python", "javascript", "java", "cpp")
 
 
+PROBLEM_SIGNATURES = {
+    "two-sum": ("two_sum", ["nums", "target"], "list[int]"),
+    "best-time-to-buy-and-sell-stock": ("max_profit", ["prices"], "int"),
+    "move-zeroes": ("move_zeroes", ["nums"], "list[int]"),
+    "product-of-array-except-self": ("product_except_self", ["nums"], "list[int]"),
+    "valid-palindrome": ("is_palindrome", ["s"], "bool"),
+    "two-sum-ii-sorted": ("two_sum_sorted", ["numbers", "target"], "list[int]"),
+    "longest-substring-without-repeating": ("length_of_longest_substring", ["s"], "int"),
+    "maximum-average-subarray": ("find_max_average", ["nums", "k"], "float"),
+    "binary-search": ("search", ["nums", "target"], "int"),
+    "search-insert-position": ("search_insert", ["nums", "target"], "int"),
+    "reverse-string": ("reverse_string", ["s"], "str"),
+    "valid-anagram": ("is_anagram", ["s", "t"], "bool"),
+    "climbing-stairs": ("climb_stairs", ["n"], "int"),
+    "maximum-subarray": ("max_sub_array", ["nums"], "int"),
+    "container-with-most-water": ("max_area", ["height"], "int"),
+}
+
+
+def leetcode_starter(problem_slug: str, language: str) -> str:
+    function_name, params, return_type = PROBLEM_SIGNATURES[problem_slug]
+
+    if language == "python":
+        args = ", ".join(params)
+        return f"""def {function_name}({args}):
+    # Write your code here
+    pass
+"""
+
+    if language == "javascript":
+        args = ", ".join(params)
+        return f"""const fs = require('fs');
+const input = fs.readFileSync(0, 'utf8').split(/\\r?\\n/).filter(line => line.length > 0);
+
+function parseValue(value) {{
+  try {{
+    return JSON.parse(value);
+  }} catch {{
+    const numeric = Number(value);
+    return Number.isNaN(numeric) ? value : numeric;
+  }}
+}}
+
+function {function_name}({args}) {{
+  // Write your code here
+  return null;
+}}
+
+const args = input.map(parseValue);
+const result = {function_name}(...args);
+console.log(JSON.stringify(result));
+"""
+
+    if language == "java":
+        java_args = ", ".join(f"Object {param}" for param in params)
+        java_call_args = ", ".join(
+            f"input.size() > {index} ? input.get({index}) : null"
+            for index, _ in enumerate(params)
+        )
+        return f"""import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Solution {{
+    public static Object {function_name}({java_args}) {{
+        // Write your code here
+        return null;
+    }}
+
+    public static void main(String[] args) throws Exception {{
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        List<String> input = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) {{
+            if (!line.isBlank()) input.add(line.trim());
+        }}
+        Object result = {function_name}({java_call_args});
+        System.out.println(result);
+    }}
+}}
+"""
+
+    cpp_args = ", ".join(f"string {param}" for param in params)
+    return f"""#include <bits/stdc++.h>
+using namespace std;
+
+string {function_name}({cpp_args}) {{
+    // Write your code here
+    return "";
+}}
+
+int main() {{
+    vector<string> input;
+    string line;
+    while (getline(cin, line)) {{
+        if (!line.empty()) input.push_back(line);
+    }}
+
+    string result = {function_name}({", ".join(f"input.size() > {index} ? input[{index}] : string()" for index, _ in enumerate(params))});
+    cout << result << endl;
+    return 0;
+}}
+"""
+
+
+def leetcode_starters(problem_slug: str) -> Dict[str, str]:
+    return {language: leetcode_starter(problem_slug, language) for language in LANGUAGES}
+
+
 PATTERNS = [
     {
         "name": "Arrays",
@@ -1797,6 +1907,10 @@ PROBLEMS = [
         ],
     },
 ]
+
+
+for problem_payload in PROBLEMS:
+    problem_payload["starter_code_json"] = leetcode_starters(problem_payload["slug"])
 
 
 def ensure_patterns(db):

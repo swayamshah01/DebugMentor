@@ -60,6 +60,7 @@ export default function ProblemWorkspace({
           <OutputPanel
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            problem={problem}
             analysisResult={analysisResult}
             isAnalyzing={isAnalyzing}
             isRunning={isRunning}
@@ -67,6 +68,8 @@ export default function ProblemWorkspace({
             language={language}
             revealHint={revealHint}
             code={code}
+            selectedVisibleTestCaseId={selectedVisibleTestCaseId}
+            onSelectVisibleTestCase={onSelectVisibleTestCase}
           />
         </section>
       </div>

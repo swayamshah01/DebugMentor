@@ -5,20 +5,24 @@ import { TestCasesTab } from './TestCasesTab'
 export default function OutputPanel({
   activeTab,
   setActiveTab,
+  problem,
   analysisResult,
   isAnalyzing,
   isRunning,
   runResult,
   language,
   revealHint,
+  selectedVisibleTestCaseId,
+  onSelectVisibleTestCase,
 }) {
   const astCount = analysisResult?.astIssues?.length ?? null
-  const testCount = analysisResult?.testCases?.length ?? null
+  const visibleTestCount = problem?.test_cases?.length ?? 0
+  const testCount = analysisResult?.testCases?.length ?? visibleTestCount
 
   const tabs = [
+    { id: 'tests', label: 'Testcase', badge: testCount },
+    { id: 'output', label: 'Result', badge: null },
     { id: 'hints', label: 'Hints', badge: astCount },
-    { id: 'output', label: 'Output', badge: null },
-    { id: 'tests', label: 'Tests', badge: testCount },
   ]
 
   return (
@@ -50,8 +54,11 @@ export default function OutputPanel({
         )}
         {activeTab === 'tests' && (
           <TestCasesTab
+            problem={problem}
             analysisResult={analysisResult}
             isAnalyzing={isAnalyzing}
+            selectedVisibleTestCaseId={selectedVisibleTestCaseId}
+            onSelectVisibleTestCase={onSelectVisibleTestCase}
           />
         )}
       </div>
