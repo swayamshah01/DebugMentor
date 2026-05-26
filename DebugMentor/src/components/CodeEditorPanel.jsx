@@ -68,6 +68,7 @@ export default function CodeEditorPanel({
   const cfg = languageConfig[language]
   const fileName = fileNames[language] || 'solution.py'
   const monacoTheme = theme === 'light' ? 'debugmentor-light' : 'debugmentor-dark'
+  const hasCode = Boolean(code?.trim())
 
   const handleEditorMount = useCallback((editor, monaco) => {
     editorRef.current = editor
@@ -135,25 +136,32 @@ export default function CodeEditorPanel({
             overviewRulerLanes: 0,
           }}
         />
+        {!hasCode && (
+          <div className="editor-empty-overlay">
+            Select a question and wait for the starter code to load.
+          </div>
+        )}
       </div>
 
       <div className="editor-toolbar">
         <div className="lang-badge">{cfg.label}</div>
 
         <button
+          type="button"
           id="btn-run-code"
           className="btn-run"
           onClick={onRun}
-          disabled={isRunning || isAnalyzing}
+          disabled={!hasCode || isRunning || isAnalyzing}
         >
           {isRunning ? 'Running...' : 'Run'}
         </button>
 
         <button
+          type="button"
           id="btn-submit-analysis"
           className={`btn-submit ${!isAnalyzing ? 'btn-submit-pulse' : ''}`}
           onClick={onSubmit}
-          disabled={isAnalyzing}
+          disabled={!hasCode || isAnalyzing || isRunning}
         >
           {isAnalyzing ? 'Submitting...' : 'Submit'}
         </button>

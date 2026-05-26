@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
     """
     Payload the client sends when registering a new user.
     """
-    username: str
+    username: Optional[str] = None
     email: EmailStr
     password: str
 

@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
+import re
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -36,6 +37,19 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+
+def build_unique_username(email: str, db: Session) -> str:
+    base = email.split("@", 1)[0].lower()
+    base = re.sub(r"[^a-z0-9_]+", "_", base).strip("_") or "student"
+    base = base[:40]
+
+    candidate = base
+    suffix = 1
+    while db.query(User).filter(User.username == candidate).first():
+        suffix += 1
+        candidate = f"{base[:40 - len(str(suffix)) - 1]}_{suffix}"
+    return candidate
+
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,19 +74,19 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     # Check existing user
-    user = db.query(User).filter(
-        (User.username == user_in.username) | (User.email == user_in.email)
-    ).first()
+    email = str(user_in.email).lower()
+    user = db.query(User).filter(User.email == email).first()
     if user:
         raise HTTPException(
             status_code=400,
-            detail="A user with this username or email already exists."
+            detail="An account with this email already exists."
         )
     
     hashed_password = get_password_hash(user_in.password)
+    username = user_in.username or build_unique_username(email, db)
     new_user = User(
-        username=user_in.username,
-        email=str(user_in.email),
+        username=username,
+        email=email,
         hashed_password=hashed_password
     )
     db.add(new_user)
@@ -88,11 +102,12 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
+    login_id = form_data.username.strip().lower()
+    user = db.query(User).filter(User.email == login_id).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth import build_unique_username
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
@@ -29,19 +30,19 @@ def create_user(
     Returns HTTP 400 if the username or email already exists.
     """
     # ── Check for duplicates ───────────────────────────────────────────────────
-    existing = db.query(User).filter(
-        (User.username == payload.username) | (User.email == payload.email)
-    ).first()
+    email = str(payload.email).lower()
+    existing = db.query(User).filter(User.email == email).first()
 
     if existing:
         raise HTTPException(
             status_code=400,
-            detail="A user with this username or email already exists.",
+            detail="An account with this email already exists.",
         )
 
     # ── Create user ────────────────────────────────────────────────────────────
     try:
-        user = User(username=payload.username, email=str(payload.email))
+        username = payload.username or build_unique_username(email, db)
+        user = User(username=username, email=email)
         db.add(user)
         db.commit()
         db.refresh(user)

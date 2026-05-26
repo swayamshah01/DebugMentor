@@ -62,6 +62,7 @@ export default function App() {
     fetchPatterns,
     fetchPatternProblems,
     fetchProblemDetail,
+    reset,
   } = useAnalysis(token, setToken)
 
   const profilePatternSummary = useMemo(() => {
@@ -113,6 +114,9 @@ export default function App() {
   const loadProblem = useCallback(async (problemId) => {
     if (!problemId) return
     setProblemLoading(true)
+    setSelectedProblemDetail(null)
+    setCode('')
+    reset()
     const detail = await fetchProblemDetail(problemId)
     setSelectedProblemDetail(detail)
     const starterForLanguage = detail?.starter_code_map?.[language] || detail?.starter_code || ''
@@ -122,7 +126,7 @@ export default function App() {
     const firstVisible = detail?.test_cases?.[0]
     setSelectedVisibleTestCaseId(firstVisible?.id ?? null)
     setProblemLoading(false)
-  }, [fetchProblemDetail, language])
+  }, [fetchProblemDetail, language, reset])
 
   const handleTogglePattern = useCallback((patternId) => {
     setExpandedPatternId(current => (current === patternId ? null : patternId))
@@ -144,6 +148,8 @@ export default function App() {
   const handleCodeChange = useCallback((val) => setCode(val || ''), [])
 
   const handleRun = useCallback(() => {
+    if (!code.trim()) return
+
     if (selectedProblemDetail) {
       setActiveTab('output')
       runCode(code, language, {
@@ -159,6 +165,7 @@ export default function App() {
   }, [code, language, runCode, selectedProblemDetail, selectedVisibleTestCase])
 
   const handleSubmit = useCallback(() => {
+    if (!code.trim()) return
     setActiveTab('tests')
     if (!selectedProblemDetail) return
     submitForAnalysis(code, language, selectedProblemDetail.id, selectedProblemDetail?.statement || '')

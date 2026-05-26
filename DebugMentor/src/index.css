@@ -746,8 +746,24 @@ body {
 
 .editor-container {
   flex: 1;
+  min-height: 320px;
   overflow: hidden;
   position: relative;
+}
+
+.editor-empty-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
 }
 
 /* Editor Toolbar */
@@ -795,6 +811,14 @@ body {
 .btn-run:hover {
   background: rgba(79, 255, 176, 0.08);
   box-shadow: 0 0 16px rgba(79, 255, 176, 0.2);
+}
+
+.btn-run:disabled,
+.btn-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-submit {
@@ -1765,6 +1789,7 @@ body {
   max-width: 1180px;
   margin: 0 auto;
   width: 100%;
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
   gap: 12px;
@@ -1794,6 +1819,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
   min-height: 0;
 }
 
