@@ -1824,10 +1824,10 @@ def upsert_problem(db, payload: Dict, pattern_map: Dict[str, int], order_index: 
 
     problem = db.query(Problem).filter(Problem.slug == payload["slug"]).first()
     if not problem:
-        problem = Problem(slug=payload["slug"])
+        problem = Problem()
         db.add(problem)
-        db.flush()
 
+    problem.slug = payload["slug"]
     problem.pattern_id = pattern_map[payload["pattern_slug"]]
     problem.title = payload["title"]
     problem.difficulty = payload["difficulty"]
