@@ -1,5 +1,14 @@
-// OutputTab.jsx
-export function OutputTab({ runResult, isRunning }) {
+// OutputTab.jsx — Phase 2
+const FILE_LABELS = {
+  python: 'python solution.py',
+  javascript: 'node solution.js',
+  cpp: './main.exe',
+  java: 'java Solution',
+}
+
+export function OutputTab({ runResult, isRunning, language = 'python' }) {
+  const termLabel = FILE_LABELS[language] || 'run solution'
+
   if (isRunning) {
     return (
       <div className="fade-in">
@@ -26,7 +35,7 @@ export function OutputTab({ runResult, isRunning }) {
           <span className="term-dot red" />
           <span className="term-dot yellow" />
           <span className="term-dot green" />
-          <span className="term-label">python solution.py</span>
+          <span className="term-label">{termLabel}</span>
         </div>
         <div className="terminal-output">
           {runResult.success ? (
@@ -34,13 +43,13 @@ export function OutputTab({ runResult, isRunning }) {
               <span className="muted">{'>>> '}[Output] </span>
               <span className="success-text">{runResult.output}</span>
               {'\n'}
-              <span className="muted">Execution time: {runResult.execTime}</span>
+              <span className="muted">Execution time: {runResult.execTime || '—'}</span>
             </>
           ) : (
             <>
               <span className="error-text">{runResult.output}</span>
               {'\n'}
-              <span className="muted">Execution time: {runResult.execTime}</span>
+              <span className="muted">Execution time: {runResult.execTime || '—'}</span>
             </>
           )}
         </div>
@@ -54,12 +63,12 @@ export function OutputTab({ runResult, isRunning }) {
           </div>
           {!runResult.success && (
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginTop: 2 }}>
-              {runResult.output.split('\n')[0]}
+              {(runResult.output || '').split('\n')[0]}
             </div>
           )}
         </div>
         <div className="exec-time">
-          Execution time: {runResult.execTime}
+          Execution time: {runResult.execTime || '—'}
         </div>
       </div>
     </div>

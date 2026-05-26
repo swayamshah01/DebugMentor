@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict
 
 
 class SubmissionCreate(BaseModel):
@@ -11,16 +11,19 @@ class SubmissionCreate(BaseModel):
     language: str
     user_id: Optional[int] = None
     test_input: Optional[str] = ""
+    problem_id: Optional[int] = None
+    problem_desc: Optional[str] = None
 
 
 class SubmissionResponse(BaseModel):
     """
-    Data returned to the client after a submission is processed.
+    Data returned to the client after a submission is processed (Phase 2).
 
-    analysis_result contains the full structured analysis:
-      - status, bug_summary, error_line, execution_output
-      - hints:      list of {level, title, icon, text}
-      - test_cases: list of {id, input, expected, actual, passed}
+    Includes:
+      - Core submission fields
+      - ast_issues: list of AST analysis findings
+      - failure_report: structured FailureReport from the failure detector
+      - hints: null (reserved for Phase 3)
     """
     model_config = ConfigDict(from_attributes=True)
 
@@ -32,9 +35,9 @@ class SubmissionResponse(BaseModel):
     hint_level:      int
     status:          str
     feedback:        Optional[str] = None
-    exit_code:       Optional[int] = None
-    actual_output:   Optional[str] = None
-    error_message:   Optional[str] = None
-    execution_time_ms: Optional[int] = None
-    timed_out:       Optional[bool] = None
-    analysis_result: Optional[Any] = None   # full structured result for the frontend
+
+    # Phase 2 structured results
+    ast_issues:      Optional[List[Dict[str, Any]]] = None
+    failure_report:  Optional[Dict[str, Any]] = None
+    hints:           Optional[Any] = None
+    problem_id:      Optional[int] = None

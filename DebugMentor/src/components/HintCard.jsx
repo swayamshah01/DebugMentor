@@ -3,6 +3,7 @@ export default function HintCard({ hint, revealed, isLast }) {
   const isLocked = !revealed
 
   const renderText = (text) => {
+    if (!text || typeof text !== 'string') return <span>No hint text available.</span>;
     // Convert **bold** and `code` markdown to styled spans
     const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/)
     return parts.map((part, i) => {

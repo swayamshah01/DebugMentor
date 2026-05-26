@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { OutputTab } from './OutputTab'
 import { HintsTab } from './HintsTab'
 import { TestCasesTab } from './TestCasesTab'
@@ -10,24 +9,22 @@ export default function OutputPanel({
   isAnalyzing,
   isRunning,
   runResult,
-  revealedHints,
-  showSolutionModal,
-  onNextHint,
-  onShowSolutionModal,
-  onCancelModal,
-  onRevealSolution,
+  language,
+  revealHint,
 }) {
+  const astCount = analysisResult?.astIssues?.length ?? null
+  const testCount = analysisResult?.testCases?.length ?? null
+
   const tabs = [
-    { id: 'hints',  label: 'Hints',   badge: analysisResult ? analysisResult.hints.length : null },
-    { id: 'output', label: 'Output',  badge: null },
-    { id: 'tests',  label: 'Tests',   badge: analysisResult ? analysisResult.testCases.length : null },
+    { id: 'hints', label: 'Hints', badge: astCount },
+    { id: 'output', label: 'Output', badge: null },
+    { id: 'tests', label: 'Tests', badge: testCount },
   ]
 
   return (
     <div className="output-panel">
-      {/* Tab bar */}
       <div className="panel-tabs">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             id={`tab-btn-${tab.id}`}
@@ -35,34 +32,20 @@ export default function OutputPanel({
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
-            {tab.badge !== null && (
-              <span className="tab-count">{tab.badge}</span>
-            )}
+            {tab.badge !== null && <span className="tab-count">{tab.badge}</span>}
           </button>
         ))}
-
-        {/* AI Badge */}
-        <div className="ai-badge">
-          <span className="ai-badge-dot" />
-          AI · Static + Runtime
-        </div>
       </div>
 
-      {/* Panel content */}
       <div className="panel-content">
         {activeTab === 'output' && (
-          <OutputTab runResult={runResult} isRunning={isRunning} />
+          <OutputTab runResult={runResult} isRunning={isRunning} language={language} />
         )}
         {activeTab === 'hints' && (
           <HintsTab
             analysisResult={analysisResult}
             isAnalyzing={isAnalyzing}
-            revealedHints={revealedHints}
-            showSolutionModal={showSolutionModal}
-            onNextHint={onNextHint}
-            onShowSolutionModal={onShowSolutionModal}
-            onCancelModal={onCancelModal}
-            onRevealSolution={onRevealSolution}
+            revealHint={revealHint}
           />
         )}
         {activeTab === 'tests' && (

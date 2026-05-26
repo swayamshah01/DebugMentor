@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -11,29 +11,36 @@ class Submission(Base):
 
     Columns
     -------
-    id           : auto-increment primary key
-    user_id      : FK → users.id
-    code         : the raw submitted source code
-    language     : e.g. "python", "cpp", "java", "javascript"
-    submitted_at : UTC timestamp of submission
-    hint_level   : 0 = first hint, 1 = more specific, 2 = full solution
-    status       : "pending" | "analyzed" | "error"
-    feedback     : the AI-generated hint text (Phase 1: dummy value)
+    id            : auto-increment primary key
+    user_id       : FK → users.id
+    code          : the raw submitted source code
+    language      : e.g. "python", "cpp", "java", "javascript"
+    submitted_at  : UTC timestamp of submission
+    hint_level    : 0 = first hint, 1 = more specific, 2 = full solution
+    status        : "pending" | "passed" | "failed" | "error"
+    feedback      : the AI-generated hint text (Phase 3)
+    ast_findings  : JSON list of AST issues detected (Phase 2)
+    test_results  : JSON FailureReport from the failure detector (Phase 2)
     """
 
     __tablename__ = "submissions"
 
-    id           = Column(Integer, primary_key=True, index=True)
-    user_id      = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    code         = Column(Text,        nullable=False)
-    language     = Column(String(30),  nullable=False)
-    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
-    hint_level   = Column(Integer,     default=0,         nullable=False)
-    status       = Column(String(20),  default="pending", nullable=False)
-    feedback     = Column(Text,        nullable=True)
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    code          = Column(Text,        nullable=False)
+    language      = Column(String(30),  nullable=False)
+    submitted_at  = Column(DateTime(timezone=True), server_default=func.now())
+    hint_level    = Column(Integer,     default=0,         nullable=False)
+    status        = Column(String(20),  default="pending", nullable=False)
+    feedback      = Column(Text,        nullable=True)
+    ast_findings  = Column(JSON,        nullable=True)   # Phase 2: AST issues list
+    test_results  = Column(JSON,        nullable=True)   # Phase 2: FailureReport dict
+    hints         = Column(JSON,        nullable=True)   # Phase 3: The LLM generated hints payload
+    problem_id    = Column(Integer, ForeignKey("problems.id"), nullable=True, index=True)
 
     # ── Relationships ──────────────────────────────────────────────────────────
     user = relationship("User", back_populates="submissions")
+    problem = relationship("Problem")
 
     def __repr__(self) -> str:
         return (
