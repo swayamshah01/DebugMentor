@@ -154,6 +154,10 @@ def submit_code(
     hints_payload["hint_intent"] = hint_intent
     hints_payload["problem_title"] = problem.title
     hints_payload["pattern_name"] = problem.pattern.name if problem.pattern else None
+    if isinstance(problem.reference_solution_json, dict):
+        solution_code = problem.reference_solution_json.get(payload.language.lower())
+        if solution_code:
+            hints_payload["solution_code"] = solution_code
 
     # ── Step 6: Determine status and persist ──────────────────────────────────
     db_status = "passed" if not failure_report["has_failures"] and not ast_issues else "failed"

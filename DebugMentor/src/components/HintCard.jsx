@@ -1,10 +1,9 @@
-// HintCard.jsx
-export default function HintCard({ hint, revealed, isLast }) {
+export default function HintCard({ hint, revealed }) {
   const isLocked = !revealed
+  const isSolution = hint.level === 3
 
   const renderText = (text) => {
-    if (!text || typeof text !== 'string') return <span>No hint text available.</span>;
-    // Convert **bold** and `code` markdown to styled spans
+    if (!text || typeof text !== 'string') return <span>No hint text available.</span>
     const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/)
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -17,38 +16,25 @@ export default function HintCard({ hint, revealed, isLast }) {
     })
   }
 
-  const isSolution = hint.level === 3
-
   return (
     <div
       id={`hint-card-${hint.level}`}
       className={`hint-card ${isLocked ? 'locked' : ''} ${isSolution ? 'solution-card' : ''}`}
     >
       <div className="hint-card-header">
-        {isSolution ? (
-          <span className="hint-badge solution">SOL</span>
-        ) : (
-          <span className="hint-badge">H{hint.level}</span>
-        )}
-        <span className="hint-title">
-          {hint.icon} {hint.title}
+        <span className={`hint-badge ${isSolution ? 'solution' : ''}`}>
+          {isSolution ? 'SOL' : `H${hint.level}`}
         </span>
-        {isLocked && <span className="hint-lock-icon">🔒</span>}
+        <span className="hint-title">{hint.title}</span>
+        {isLocked && <span className="hint-lock-icon">Locked</span>}
       </div>
 
       {isLocked ? (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontFamily: 'var(--font-body)',
-          fontSize: 13,
-          color: 'var(--text-secondary)',
-          opacity: 0.7
-        }}>
-          <span>🔐</span>
-          <span>{isSolution ? 'Requires confirmation to unlock' : 'Unlock to see hint'}</span>
+        <div className="hint-locked-text">
+          {isSolution ? 'Confirm to unlock the reference solution.' : 'Unlock to see this hint.'}
         </div>
+      ) : isSolution ? (
+        <pre className="solution-code-block">{hint.text}</pre>
       ) : (
         <p className="hint-text">{renderText(hint.text)}</p>
       )}

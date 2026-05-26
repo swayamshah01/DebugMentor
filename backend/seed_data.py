@@ -1910,6 +1910,7 @@ PROBLEMS = [
 
 
 for problem_payload in PROBLEMS:
+    problem_payload["reference_solution_json"] = problem_payload["starter_code_json"]
     problem_payload["starter_code_json"] = leetcode_starters(problem_payload["slug"])
 
 
@@ -1950,7 +1951,7 @@ def upsert_problem(db, payload: Dict, pattern_map: Dict[str, int], order_index: 
     problem.constraints_text = payload["constraints_text"]
     problem.examples_json = payload["examples_json"]
     problem.starter_code_json = payload["starter_code_json"]
-    problem.reference_solution_json = None
+    problem.reference_solution_json = payload.get("reference_solution_json")
     problem.order_index = order_index
     problem.is_active = True
     return problem

@@ -96,6 +96,66 @@ def extract_json_with_fallback(text: str) -> Dict[str, Any]:
         "hint_3": "Check for common logical misteps or syntax edge cases."
     }
 
+
+def build_contextual_fallback(
+    language: str,
+    failure_report: Dict[str, Any],
+    ast_issues: List[Dict[str, Any]],
+    problem_title: Optional[str] = None,
+) -> Dict[str, Any]:
+    title = problem_title or "this problem"
+    dominant_failure = failure_report.get("dominant_failure_type", "UNKNOWN")
+    test_results = failure_report.get("test_results", [])
+    failing_test = next((t for t in test_results if t.get("status") != "PASSED"), None)
+
+    if ast_issues:
+        first_issue = ast_issues[0]
+        message = first_issue.get("message", "Static analysis found a code issue.")
+        return {
+            "explanation": f"Static analysis found an issue before judging {title}: {message}",
+            "hint_1": "Fix the static issue first, then run the visible sample again.",
+            "hint_2": "Focus on the line mentioned by the analyzer and make the function return the required value.",
+            "hint_3": "Use the Show Solution button to compare your final approach with the reference solution.",
+        }
+
+    if dominant_failure == "WRONG_OUTPUT" and failing_test:
+        return {
+            "explanation": (
+                f"Your code runs, but it returns the wrong answer for {title}. "
+                f"For input {failing_test.get('input', '')}, expected {failing_test.get('expected_output', '?')} "
+                f"but got {failing_test.get('actual_output') or '(no output)'}."
+            ),
+            "hint_1": "Trace the visible sample by hand and compare each variable change with the expected answer.",
+            "hint_2": "Your output shape and final returned value must match the problem exactly, including list/order/boolean formatting.",
+            "hint_3": "Use the Show Solution button to compare your algorithm with the reference solution.",
+        }
+
+    if dominant_failure == "RUNTIME_ERROR" and failing_test:
+        return {
+            "explanation": (
+                f"Your code crashes while running a test for {title}. "
+                f"The first error is: {failing_test.get('error_message', '').splitlines()[0] if failing_test.get('error_message') else 'runtime error'}."
+            ),
+            "hint_1": "Check whether your function signature matches the starter code and visible test input.",
+            "hint_2": f"In {language}, make sure you return a value from the function instead of relying only on input parsing or printing.",
+            "hint_3": "Use the Show Solution button to compare your function structure with the reference solution.",
+        }
+
+    if dominant_failure == "TIMEOUT":
+        return {
+            "explanation": f"Your code is taking too long on at least one test for {title}.",
+            "hint_1": "Look for a loop that may never move toward its stopping condition.",
+            "hint_2": "For DSA problems, prefer the intended pattern shown by the category instead of brute force when constraints are large.",
+            "hint_3": "Use the Show Solution button to compare the expected time complexity with your approach.",
+        }
+
+    return {
+        "explanation": f"Your submission for {title} needs one more check against the visible examples.",
+        "hint_1": "Start with Case 1 and write down what your function should return.",
+        "hint_2": "Make the function return the answer directly; the runner handles calling it with the sample input.",
+        "hint_3": "Use the Show Solution button to compare against the reference implementation.",
+    }
+
 def generate_hints(code: str, language: str, failure_report: Dict[str, Any], ast_issues: List[Dict[str, Any]], user_id: Optional[int] = None, db: Optional[Session] = None, problem_desc: Optional[str] = None, problem_id: Optional[str] = None, hint_intent: Optional[str] = None, pattern_name: Optional[str] = None, problem_title: Optional[str] = None, constraints_text: Optional[str] = None) -> Dict[str, Any]:
     # ── 1. Check Cache ──────────────────────────────────────────
     dominant_failure = failure_report.get("dominant_failure_type", "UNKNOWN")
@@ -185,7 +245,7 @@ Output Instructions:
     # ── 3. Call LLM ───────────────────────────────────────────────
     if not gemini_model:
         logger.error("Gemini API key not configured.")
-        result_json = extract_json_with_fallback("")
+        result_json = build_contextual_fallback(language, failure_report, ast_issues, problem_title)
         return {**result_json, "cached": False, "model": "fallback"}
         
     try:
@@ -207,6 +267,9 @@ Output Instructions:
         
     # ── 4. Parse & Validate JSON ──────────────────────────────────
     result_json = extract_json_with_fallback(response_text)
+    generic_fallback = result_json.get("explanation", "").startswith("We detected an issue")
+    if generic_fallback:
+        result_json = build_contextual_fallback(language, failure_report, ast_issues, problem_title)
     
     # Ensure keys exist
     for k in ["explanation", "hint_1", "hint_2", "hint_3"]:

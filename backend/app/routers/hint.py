@@ -55,7 +55,10 @@ def reveal_hint(
             logger.warning("Redis write error on /hint: %s", e)
             
     # 5. Extract hint payload
-    hint_text = hints_data.get(f"hint_{new_level}", "No hint available.")
+    if new_level == 3:
+        hint_text = hints_data.get("solution_code") or hints_data.get("hint_3", "No solution available.")
+    else:
+        hint_text = hints_data.get(f"hint_{new_level}", "No hint available.")
     
     # 6. Database updates
     if new_level == 3 and submission.hint_level < 3:
@@ -81,5 +84,6 @@ def reveal_hint(
         "level": new_level,
         "hint": hint_text,
         "is_solution": new_level == 3,
+        "solution_code": hints_data.get("solution_code") if new_level == 3 else None,
         "levels_remaining": 3 - new_level
     }
