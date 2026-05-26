@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { languageConfig } from '../data/mockData'
+import { languageConfig } from '../data/languages'
 import { useTheme } from '../context/ThemeContext'
 
 const LANGUAGES = ['python', 'cpp', 'java', 'javascript']

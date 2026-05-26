@@ -1,6 +1,6 @@
 // StatusBar.jsx — Phase 2
 // Shows: language pill, AST issue count, line/col, status indicator
-import { languageConfig } from '../data/mockData'
+import { languageConfig } from '../data/languages'
 
 export default function StatusBar({ language, isAnalyzing, analysisResult }) {
   const cfg = languageConfig[language]

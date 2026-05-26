@@ -1,6 +1,7 @@
 # ── Web framework ─────────────────────────────────────────────────
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
+python-multipart==0.0.12
 
 # ── Database ──────────────────────────────────────────────────────
 sqlalchemy==2.0.36
@@ -11,6 +12,8 @@ psycopg2-binary==2.9.10
 pydantic==2.9.2
 pydantic[email]
 python-dotenv==1.0.1
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 
 # ── Dev utilities ─────────────────────────────────────────────────
 # httpx           # for async test client (Phase 2 testing)

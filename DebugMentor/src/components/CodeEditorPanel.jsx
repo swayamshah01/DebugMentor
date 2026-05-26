@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import MonacoEditor from '@monaco-editor/react'
-import { languageConfig } from '../data/mockData'
+import { languageConfig } from '../data/languages'
 import { useTheme } from '../context/ThemeContext'
 
 const MONACO_DARK = {
