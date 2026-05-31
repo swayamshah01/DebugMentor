@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 import logging
 from pydantic import BaseModel
 from typing import Optional
 
-from app.engines.llm_layer import gemini_model, extract_json_with_fallback
+from app.engines.llm_layer import gemini_model
 
 logger = logging.getLogger(__name__)
 

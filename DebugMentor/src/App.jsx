@@ -66,18 +66,6 @@ export default function App() {
     reset,
   } = useAnalysis(token, setToken)
 
-  const profilePatternSummary = useMemo(() => {
-    const summary = {}
-    if (profileData?.weak_patterns) {
-      profileData.weak_patterns.forEach(item => {
-        summary[item.pattern_id] = item
-      })
-    }
-    return summary
-  }, [profileData])
-
-  const expandedPatternProblems = patternProblemsById[expandedPatternId] || []
-
   const selectedVisibleTestCase = useMemo(() => {
     if (!selectedProblemDetail?.test_cases?.length) return null
     return selectedProblemDetail.test_cases.find(testCase => testCase.id === selectedVisibleTestCaseId) || selectedProblemDetail.test_cases[0]
@@ -284,7 +272,6 @@ export default function App() {
           isRunning={isRunning}
           runResult={runResult}
           analysisResult={analysisResult}
-          onBack={handleBackToExplorer}
           onCodeChange={handleCodeChange}
           onRun={handleRun}
           onSubmit={handleSubmit}

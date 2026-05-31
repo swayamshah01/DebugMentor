@@ -13,7 +13,6 @@ export default function ProblemWorkspace({
   isRunning,
   runResult,
   analysisResult,
-  onBack,
   onCodeChange,
   onRun,
   onSubmit,
@@ -57,7 +56,6 @@ export default function ProblemWorkspace({
             runResult={runResult}
             language={language}
             revealHint={revealHint}
-            code={code}
             selectedVisibleTestCaseId={selectedVisibleTestCaseId}
             onSelectVisibleTestCase={onSelectVisibleTestCase}
           />

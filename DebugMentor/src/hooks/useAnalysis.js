@@ -181,23 +181,6 @@ export function useAnalysis(token, setToken) {
     }
   }, [authHeaders])
 
-  const generateAITestCases = useCallback(async (code, language, problemDesc = null) => {
-    try {
-      const { data } = await axios.post(`${API_BASE}/testcases/generate`, {
-        code,
-        language,
-        problem_desc: problemDesc,
-      }, {
-        headers: authHeaders(),
-        timeout: 20000,
-      })
-      return data
-    } catch (err) {
-      console.error('[DebugMentor] /testcases/generate error:', err)
-      return null
-    }
-  }, [authHeaders])
-
   const fetchProfile = useCallback(async (userId) => {
     try {
       const { data } = await axios.get(`${API_BASE}/profile/${userId}`, {
@@ -259,7 +242,6 @@ export function useAnalysis(token, setToken) {
     runCode,
     submitForAnalysis,
     revealHint,
-    generateAITestCases,
     fetchProfile,
     fetchPatterns,
     fetchPatternProblems,
