@@ -55,11 +55,13 @@ const fileNames = {
 export default function CodeEditorPanel({
   code,
   language,
+  availableLanguages = ['python'],
   isAnalyzing,
   isRunning,
   onCodeChange,
   onRun,
   onSubmit,
+  onLanguageChange,
   analysisResult,
 }) {
   const editorRef = useRef(null)
@@ -90,25 +92,22 @@ export default function CodeEditorPanel({
 
   return (
     <div className="editor-panel" style={{ width: '100%' }}>
-      <div className="breadcrumb-bar" style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="crumb-file">{fileName}</span>
-          <span
-            style={{
-              padding: '3px 8px',
-              borderRadius: 999,
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)',
-              fontSize: 11,
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            {statusLabel}
-          </span>
-        </div>
-        <div style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
-          {cfg.label}
-        </div>
+      <div className="file-tabbar">
+        {availableLanguages.map((langKey) => {
+          const langCfg = languageConfig[langKey]
+          const tabName = fileNames[langKey] || 'solution.txt'
+          return (
+            <button
+              key={langKey}
+              type="button"
+              className={`file-tab ${langKey === language ? 'active' : ''}`}
+              onClick={() => onLanguageChange && onLanguageChange(langKey)}
+            >
+              <span className="file-tab-dot" style={{ background: langCfg.color }} />
+              <span>{tabName}</span>
+            </button>
+          )
+        })}
       </div>
 
       <div className="editor-container">
@@ -144,7 +143,10 @@ export default function CodeEditorPanel({
       </div>
 
       <div className="editor-toolbar">
-        <div className="lang-badge">{cfg.label}</div>
+        <div className="editor-meta-group">
+          <div className="lang-badge">{cfg.label}</div>
+          <div className="editor-status-pill">{statusLabel}</div>
+        </div>
 
         <button
           type="button"
@@ -168,21 +170,10 @@ export default function CodeEditorPanel({
       </div>
 
       <div
-        style={{
-          height: 24,
-          background: 'var(--bg-base)',
-          borderTop: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          gap: 16,
-          flexShrink: 0,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          color: 'var(--text-secondary)',
-        }}
+        className="editor-statusbar"
       >
         <span>Ln {lineCol.line}, Col {lineCol.col}</span>
+        <span>{fileName}</span>
         <span style={{ marginLeft: 'auto' }}>UTF-8</span>
       </div>
     </div>

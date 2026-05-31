@@ -6,6 +6,7 @@ export default function ProblemWorkspace({
   problem,
   code,
   language,
+  availableLanguages,
   activeTab,
   setActiveTab,
   isAnalyzing,
@@ -16,6 +17,7 @@ export default function ProblemWorkspace({
   onCodeChange,
   onRun,
   onSubmit,
+  onLanguageChange,
   revealHint,
   selectedVisibleTestCaseId,
   onSelectVisibleTestCase,
@@ -23,20 +25,6 @@ export default function ProblemWorkspace({
 }) {
   return (
     <main className="problem-workspace-shell">
-      <header className="problem-workspace-header">
-        <button type="button" className="back-to-explorer" onClick={onBack}>
-          Back to Patterns
-        </button>
-        <div className="problem-workspace-heading">
-          <div className="workspace-kicker">Practice Workspace</div>
-          <h1>{problem?.title || 'Select a problem'}</h1>
-          {problem?.pattern?.name && <p>{problem.pattern.name}</p>}
-        </div>
-        {problem?.difficulty && (
-          <span className={`difficulty difficulty-${problem.difficulty}`}>{problem.difficulty}</span>
-        )}
-      </header>
-
       <div className="problem-workspace-grid">
         <ProblemStatement
           problem={problem}
@@ -49,11 +37,13 @@ export default function ProblemWorkspace({
           <CodeEditorPanel
             code={code}
             language={language}
+            availableLanguages={availableLanguages}
             isAnalyzing={isAnalyzing}
             isRunning={isRunning}
             onCodeChange={onCodeChange}
             onRun={onRun}
             onSubmit={onSubmit}
+            onLanguageChange={onLanguageChange}
             analysisResult={analysisResult}
           />
 

@@ -43,6 +43,7 @@ export default function App() {
   const [problemLoading, setProblemLoading] = useState(false)
   const [profileData, setProfileData] = useState(null)
   const [selectedVisibleTestCaseId, setSelectedVisibleTestCaseId] = useState(null)
+  const [codeDrafts, setCodeDrafts] = useState({})
 
   const [language, setLanguage] = useState('python')
   const [code, setCode] = useState('')
@@ -115,11 +116,14 @@ export default function App() {
     if (!problemId) return
     setProblemLoading(true)
     setSelectedProblemDetail(null)
+    setCodeDrafts({})
     setCode('')
     reset()
     const detail = await fetchProblemDetail(problemId)
     setSelectedProblemDetail(detail)
-    const starterForLanguage = detail?.starter_code_map?.[language] || detail?.starter_code || ''
+    const nextDrafts = detail?.starter_code_map || {}
+    setCodeDrafts(nextDrafts)
+    const starterForLanguage = nextDrafts[language] || detail?.starter_code || ''
     if (starterForLanguage) {
       setCode(starterForLanguage)
     }
@@ -140,13 +144,19 @@ export default function App() {
 
   const handleLanguageChange = useCallback((lang) => {
     setLanguage(lang)
+    const existingDraft = codeDrafts[lang]
     const starterForLanguage = selectedProblemDetail?.starter_code_map?.[lang]
-    if (starterForLanguage) {
-      setCode(starterForLanguage)
-    }
-  }, [selectedProblemDetail])
+    setCode(existingDraft || starterForLanguage || '')
+  }, [codeDrafts, selectedProblemDetail])
 
-  const handleCodeChange = useCallback((val) => setCode(val || ''), [])
+  const handleCodeChange = useCallback((val) => {
+    const nextValue = val || ''
+    setCode(nextValue)
+    setCodeDrafts((current) => ({
+      ...current,
+      [language]: nextValue,
+    }))
+  }, [language])
 
   const handleRun = useCallback(() => {
     if (!code.trim()) return
@@ -247,6 +257,9 @@ export default function App() {
         username={username}
         onLogout={handleLogout}
         onProfileOpen={() => setProfileOpen(true)}
+        showBackToPatterns={screen === 'workspace'}
+        onBackToPatterns={handleBackToExplorer}
+        problem={selectedProblemDetail}
       />
 
       {screen === 'explorer' ? (
@@ -264,6 +277,7 @@ export default function App() {
           problem={selectedProblemDetail}
           code={code}
           language={language}
+          availableLanguages={selectedProblemDetail?.available_languages || ['python']}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           isAnalyzing={isAnalyzing}
@@ -274,6 +288,7 @@ export default function App() {
           onCodeChange={handleCodeChange}
           onRun={handleRun}
           onSubmit={handleSubmit}
+          onLanguageChange={handleLanguageChange}
           revealHint={revealHint}
           selectedVisibleTestCaseId={selectedVisibleTestCaseId}
           onSelectVisibleTestCase={handleSelectVisibleTestCase}

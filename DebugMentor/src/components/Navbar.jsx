@@ -11,7 +11,17 @@ const langIconColors = {
   javascript: '#ca8a04',
 }
 
-export default function Navbar({ language, onLanguageChange, backendOnline = true, username, onLogout, onProfileOpen }) {
+export default function Navbar({
+  language,
+  onLanguageChange,
+  backendOnline = true,
+  username,
+  onLogout,
+  onProfileOpen,
+  showBackToPatterns = false,
+  onBackToPatterns,
+  problem,
+}) {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [sessionTime, setSessionTime] = useState(0)
@@ -37,6 +47,20 @@ export default function Navbar({ language, onLanguageChange, backendOnline = tru
         <div className="navbar-logo-icon">DM</div>
         <span className="navbar-logo-text">Debug<span>Mentor</span></span>
       </a>
+
+      {showBackToPatterns && (
+        <button type="button" className="navbar-back-btn" onClick={onBackToPatterns}>
+          Back
+        </button>
+      )}
+
+      {showBackToPatterns && problem && (
+        <div className="navbar-breadcrumb">
+          <span>{problem.pattern?.name || 'Pattern'}</span>
+          <span>/</span>
+          <strong>{problem.title}</strong>
+        </div>
+      )}
 
       <div className={`connection-pill ${backendOnline ? 'live' : 'offline'}`}>
         <span className="connection-dot" />
@@ -92,20 +116,22 @@ export default function Navbar({ language, onLanguageChange, backendOnline = tru
       </div>
 
       <div className="navbar-right">
-        <span className="session-timer">Session: {formatTime(sessionTime)}</span>
+        <div className="navbar-utility-group">
+          <span className="session-timer">Session: {formatTime(sessionTime)}</span>
 
-        <button
-          id="theme-toggle-btn"
-          className="theme-toggle-btn"
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {theme === 'dark' ? 'Light' : 'Dark'}
-        </button>
+          <button
+            id="theme-toggle-btn"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
 
-        <button id="logout-btn" className="logout-btn" onClick={onLogout} title="Logout">
-          Logout
-        </button>
+          <button id="logout-btn" className="logout-btn" onClick={onLogout} title="Logout">
+            Logout
+          </button>
+        </div>
 
         <div
           id="user-avatar"

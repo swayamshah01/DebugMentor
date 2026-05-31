@@ -88,16 +88,45 @@ body {
    NAVBAR
    ============================================= */
 .navbar {
-  height: 56px;
+  height: 64px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  gap: 16px;
+  padding: 0 18px;
+  gap: 12px;
   position: relative;
   z-index: 50;
   flex-shrink: 0;
+}
+
+.navbar-back-btn {
+  border: 1px solid var(--border-bright);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.navbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.navbar-breadcrumb strong {
+  color: var(--text-primary);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .navbar-logo {
@@ -266,7 +295,17 @@ body {
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+}
+
+.navbar-utility-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 8px 6px 12px;
 }
 
 .session-timer {
@@ -458,8 +497,11 @@ body {
 }
 
 .problem-statement-panel {
-  padding: 16px;
+  padding: 18px;
   overflow-y: auto;
+  background:
+    linear-gradient(180deg, rgba(59,130,246,0.04), transparent 18%),
+    var(--bg-surface);
 }
 
 .practice-center-column {
@@ -702,7 +744,7 @@ body {
   border-right: 1px solid var(--border);
   background: var(--bg-surface);
   overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(79,255,176,0.03);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
 .breadcrumb-bar {
@@ -768,7 +810,7 @@ body {
 
 /* Editor Toolbar */
 .editor-toolbar {
-  height: 48px;
+  height: 52px;
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -789,6 +831,21 @@ body {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--accent-primary);
+}
+
+.editor-meta-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-status-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .btn-run {
@@ -843,6 +900,20 @@ body {
 .btn-submit:hover {
   box-shadow: 0 0 20px rgba(79, 255, 176, 0.4), 0 0 40px rgba(79, 255, 176, 0.15);
   transform: translateY(-1px);
+}
+
+.editor-statusbar {
+  height: 26px;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .btn-submit:disabled {
@@ -956,7 +1027,7 @@ body {
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 18px;
 }
 
 /* fade-in animation */
@@ -1814,14 +1885,19 @@ body {
 }
 
 .problem-workspace-grid {
-  max-width: none;
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
   flex: 1;
   display: grid;
   grid-template-columns: minmax(360px, 42%) minmax(0, 1fr);
-  gap: 12px;
+  gap: 0;
   min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--bg-surface);
+  box-shadow: 0 24px 48px rgba(15,23,42,0.10);
 }
 
 .problem-workspace-header {
@@ -1847,23 +1923,26 @@ body {
 .workspace-editor-stack {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   height: 100%;
   min-height: 0;
+  background: linear-gradient(180deg, rgba(37,99,235,0.04), transparent 14%), var(--bg-base);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  gap: 14px;
 }
 
 .workspace-editor-stack .editor-panel {
-  flex: 0 0 56%;
-  min-height: 360px;
+  flex: 1 1 auto;
+  min-height: 420px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .workspace-editor-stack .output-panel {
-  flex: 1;
-  min-height: 230px;
+  flex: 0 0 280px;
+  min-height: 280px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .testcase-tabs {
@@ -1892,7 +1971,7 @@ body {
 
 .leetcode-case-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 10px;
 }
 
@@ -1919,6 +1998,24 @@ body {
 
 .case-field + .case-field {
   margin-top: 10px;
+}
+
+@media (min-width: 1180px) {
+  .leetcode-case-card {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+
+  .case-card-title {
+    margin-bottom: 0;
+    padding-top: 4px;
+  }
+
+  .case-field + .case-field {
+    margin-top: 0;
+  }
 }
 
 .case-label {
@@ -1948,6 +2045,14 @@ body {
   padding: 32px 16px;
 }
 
+.problem-statement-panel .problem-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, var(--bg-surface) 72%, rgba(255,255,255,0));
+  padding-bottom: 14px;
+}
+
 .problem-statement-panel .example-card-button {
   width: 100%;
   text-align: left;
@@ -1963,6 +2068,11 @@ body {
   .problem-workspace-grid {
     grid-template-columns: 1fr;
   }
+
+  .workspace-editor-stack {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
 }
 
 @media (max-width: 900px) {
@@ -1975,5 +2085,30 @@ body {
   .problem-workspace-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .navbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+
+  .navbar-center {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .navbar-right {
+    margin-left: auto;
+  }
+
+  .navbar-breadcrumb {
+    width: 100%;
+    order: 4;
+  }
+
+  .workspace-editor-stack {
+    padding: 12px;
   }
 }

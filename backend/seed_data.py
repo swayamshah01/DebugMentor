@@ -1934,6 +1934,26 @@ def ensure_patterns(db):
     return created
 
 
+def prune_non_curated_content(db):
+    from app.models.pattern import Pattern
+    from app.models.problem import Problem
+    from app.models.testcase import TestCase
+
+    curated_pattern_slugs = {payload["slug"] for payload in PATTERNS}
+    curated_problem_slugs = {payload["slug"] for payload in PROBLEMS}
+
+    non_curated_problem_ids = [
+        row[0]
+        for row in db.query(Problem.id).filter(~Problem.slug.in_(curated_problem_slugs)).all()
+    ]
+    if non_curated_problem_ids:
+        db.query(TestCase).filter(TestCase.problem_id.in_(non_curated_problem_ids)).delete(synchronize_session=False)
+        db.query(Problem).filter(Problem.id.in_(non_curated_problem_ids)).delete(synchronize_session=False)
+
+    db.query(Pattern).filter(~Pattern.slug.in_(curated_pattern_slugs)).delete(synchronize_session=False)
+    db.commit()
+
+
 def upsert_problem(db, payload: Dict, pattern_map: Dict[str, int], order_index: int) -> Problem:
     from app.models.problem import Problem
 
@@ -2006,6 +2026,7 @@ def seed():
 
     db = SessionLocal()
     try:
+        prune_non_curated_content(db)
         created_patterns = ensure_patterns(db)
         created_problems, created_tests = ensure_problems_and_tests(db)
 
