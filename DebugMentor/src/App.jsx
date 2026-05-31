@@ -150,7 +150,7 @@ export default function App() {
     if (!code.trim()) return
 
     if (selectedProblemDetail) {
-      setActiveTab('output')
+      setActiveTab('tests')
       runCode(code, language, {
         problemId: selectedProblemDetail.id,
         testCaseId: selectedVisibleTestCase?.id ?? null,
@@ -167,8 +167,19 @@ export default function App() {
     if (!code.trim()) return
     setActiveTab('tests')
     if (!selectedProblemDetail) return
-    submitForAnalysis(code, language, selectedProblemDetail.id, selectedProblemDetail?.statement || '')
-  }, [code, language, selectedProblemDetail, submitForAnalysis])
+    submitForAnalysis(
+      code,
+      language,
+      selectedProblemDetail.id,
+      selectedProblemDetail?.statement || '',
+      async () => {
+        if (userId) {
+          const data = await fetchProfile(userId)
+          if (data) setProfileData(data)
+        }
+      },
+    )
+  }, [code, language, selectedProblemDetail, submitForAnalysis, userId, fetchProfile])
 
   const handleSelectVisibleTestCase = useCallback((testCase) => {
     setSelectedVisibleTestCaseId(testCase?.id ?? null)
@@ -210,13 +221,13 @@ export default function App() {
   }, [screen, selectedProblemId, loadProblem])
 
   useEffect(() => {
-    if (!profileOpen || !userId) return
+    if (!userId) return
     const load = async () => {
       const data = await fetchProfile(userId)
       setProfileData(data)
     }
     load()
-  }, [profileOpen, userId, fetchProfile])
+  }, [userId, fetchProfile])
 
   if (screen === 'landing') {
     return <LandingPage onGetStarted={() => setScreen('auth')} />
@@ -254,6 +265,7 @@ export default function App() {
         <PatternExplorerPage
           patterns={patterns}
           loading={patternsLoading}
+          profileData={profileData}
           expandedPatternId={expandedPatternId}
           patternProblemsById={patternProblemsById}
           loadingPatternId={patternLoadingId}
@@ -265,7 +277,6 @@ export default function App() {
           problem={selectedProblemDetail}
           code={code}
           language={language}
-          availableLanguages={selectedProblemDetail?.available_languages || ['python']}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           isAnalyzing={isAnalyzing}
@@ -275,7 +286,6 @@ export default function App() {
           onCodeChange={handleCodeChange}
           onRun={handleRun}
           onSubmit={handleSubmit}
-          onLanguageChange={handleLanguageChange}
           revealHint={revealHint}
           selectedVisibleTestCaseId={selectedVisibleTestCaseId}
           onSelectVisibleTestCase={handleSelectVisibleTestCase}

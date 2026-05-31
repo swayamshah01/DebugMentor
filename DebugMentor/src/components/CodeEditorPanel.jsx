@@ -55,13 +55,11 @@ const fileNames = {
 export default function CodeEditorPanel({
   code,
   language,
-  availableLanguages = ['python'],
   isAnalyzing,
   isRunning,
   onCodeChange,
   onRun,
   onSubmit,
-  onLanguageChange,
   analysisResult,
 }) {
   const editorRef = useRef(null)
@@ -93,21 +91,10 @@ export default function CodeEditorPanel({
   return (
     <div className="editor-panel" style={{ width: '100%' }}>
       <div className="file-tabbar">
-        {availableLanguages.map((langKey) => {
-          const langCfg = languageConfig[langKey]
-          const tabName = fileNames[langKey] || 'solution.txt'
-          return (
-            <button
-              key={langKey}
-              type="button"
-              className={`file-tab ${langKey === language ? 'active' : ''}`}
-              onClick={() => onLanguageChange && onLanguageChange(langKey)}
-            >
-              <span className="file-tab-dot" style={{ background: langCfg.color }} />
-              <span>{tabName}</span>
-            </button>
-          )
-        })}
+        <div className="file-tab active static-file-tab">
+          <span className="file-tab-dot" style={{ background: cfg.color }} />
+          <span>{fileName}</span>
+        </div>
       </div>
 
       <div className="editor-container">

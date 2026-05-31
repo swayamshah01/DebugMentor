@@ -56,6 +56,7 @@ export default function OutputPanel({
           <TestCasesTab
             problem={problem}
             analysisResult={analysisResult}
+            runResult={runResult}
             isAnalyzing={isAnalyzing}
             selectedVisibleTestCaseId={selectedVisibleTestCaseId}
             onSelectVisibleTestCase={onSelectVisibleTestCase}

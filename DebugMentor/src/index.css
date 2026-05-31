@@ -728,6 +728,10 @@ body {
   background: var(--accent-primary);
 }
 
+.static-file-tab {
+  cursor: default;
+}
+
 .file-tab-dot {
   width: 6px;
   height: 6px;
@@ -1104,7 +1108,10 @@ body {
 }
 
 .status-icon {
-  font-size: 20px;
+  min-width: 44px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
 }
 
 .status-label {
@@ -1762,6 +1769,73 @@ body {
   gap: 12px;
 }
 
+.practice-overview {
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.overview-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.overview-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.overview-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.overview-subtext {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.trend-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trend-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 28px;
+  align-items: center;
+}
+
+.trend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-bright);
+  display: inline-block;
+}
+
+.trend-dot.pass {
+  background: #22c55e;
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+.trend-dot.fail {
+  background: #ef4444;
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
 .pattern-explorer-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -1993,6 +2067,14 @@ body {
   box-shadow: inset 3px 0 0 var(--accent-primary);
 }
 
+.leetcode-case-card.passed {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.leetcode-case-card.failed {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
 .case-card-title {
   font-size: 13px;
   font-weight: 700;
@@ -2076,6 +2158,10 @@ body {
     border-left: 0;
     border-top: 1px solid var(--border);
   }
+
+  .practice-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -2113,5 +2199,9 @@ body {
 
   .workspace-editor-stack {
     padding: 12px;
+  }
+
+  .practice-overview {
+    grid-template-columns: 1fr;
   }
 }

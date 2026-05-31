@@ -1,4 +1,3 @@
-// OutputTab.jsx — Phase 2
 const FILE_LABELS = {
   python: 'python solution.py',
   javascript: 'node solution.js',
@@ -21,12 +20,19 @@ export function OutputTab({ runResult, isRunning, language = 'python' }) {
   if (!runResult) {
     return (
       <div className="empty-state">
-        <div className="empty-icon">▶</div>
+        <div className="empty-icon">Run</div>
         <div className="empty-title">No output yet</div>
-        <div className="empty-desc">Click "Run Code" to see the execution output here.</div>
+        <div className="empty-desc">Click Run to check your code against the visible practice tests.</div>
       </div>
     )
   }
+
+  const hasVisibleTestSummary = Number(runResult.totalTests || 0) > 0
+  const statusTitle = hasVisibleTestSummary
+    ? (runResult.success
+        ? `Visible tests passed (${runResult.passedTests}/${runResult.totalTests})`
+        : `Visible tests failed (${runResult.failedTests}/${runResult.totalTests})`)
+    : (runResult.success ? 'Ran successfully' : 'Runtime Error')
 
   return (
     <div className="fade-in">
@@ -40,26 +46,26 @@ export function OutputTab({ runResult, isRunning, language = 'python' }) {
         <div className="terminal-output">
           {runResult.success ? (
             <>
-              <span className="muted">{'>>> '}[Output] </span>
+              <span className="muted">{'>>> '}[Practice Check] </span>
               <span className="success-text">{runResult.output}</span>
               {'\n'}
-              <span className="muted">Execution time: {runResult.execTime || '—'}</span>
+              <span className="muted">Execution time: {runResult.execTime || '-'}</span>
             </>
           ) : (
             <>
               <span className="error-text">{runResult.output}</span>
               {'\n'}
-              <span className="muted">Execution time: {runResult.execTime || '—'}</span>
+              <span className="muted">Execution time: {runResult.execTime || '-'}</span>
             </>
           )}
         </div>
       </div>
 
       <div className={`output-status-card ${runResult.success ? 'success' : 'error'}`}>
-        <span className="status-icon">{runResult.success ? '✅' : '❌'}</span>
+        <span className="status-icon">{runResult.success ? 'PASS' : 'FAIL'}</span>
         <div>
           <div className={`status-label ${runResult.success ? 'success-text' : 'error-text'}`}>
-            {runResult.success ? 'Ran successfully' : 'Runtime Error'}
+            {statusTitle}
           </div>
           {!runResult.success && (
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginTop: 2 }}>
@@ -68,7 +74,7 @@ export function OutputTab({ runResult, isRunning, language = 'python' }) {
           )}
         </div>
         <div className="exec-time">
-          Execution time: {runResult.execTime || '—'}
+          Execution time: {runResult.execTime || '-'}
         </div>
       </div>
     </div>

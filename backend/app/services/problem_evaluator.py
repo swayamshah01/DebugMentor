@@ -83,8 +83,10 @@ def evaluate_problem_submission(
     code: str,
     language: str,
     db,
+    include_hidden: bool = True,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], List[TestCase]]:
-    test_cases = load_problem_test_cases(db, problem.id)
+    all_test_cases = load_problem_test_cases(db, problem.id)
+    test_cases = all_test_cases if include_hidden else [case for case in all_test_cases if not case.is_hidden]
     raw_results: List[Dict[str, Any]] = []
     function_name = extract_python_function_name(code) if language.lower() == "python" else None
 

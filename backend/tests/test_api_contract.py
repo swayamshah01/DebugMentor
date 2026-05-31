@@ -144,7 +144,9 @@ def test_run_endpoint_is_non_persistent(api_client, db_session):
     assert response.status_code == 200
     payload = response.json()
     assert payload["success"] is True
-    assert payload["output"].strip() == "7"
+    assert payload["passed_tests"] == 1
+    assert payload["failed_tests"] == 0
+    assert "Passed all visible tests" in payload["output"]
     assert before == after
 
 
@@ -166,7 +168,29 @@ def test_run_endpoint_executes_function_style_curated_problem(api_client, db_ses
     assert response.status_code == 200
     payload = response.json()
     assert payload["success"] is True
-    assert payload["output"].strip() == "8"
+    assert payload["passed_tests"] == 1
+    assert payload["test_results"][0]["actual_output"].strip() == "8"
+
+
+def test_run_endpoint_fails_empty_function_against_visible_tests(api_client, db_session):
+    client, set_current_user = api_client
+    data = make_curated_problem(db_session)
+    set_current_user(data["user"])
+
+    response = client.post(
+        "/api/run",
+        json={
+            "code": "def solve(n):\n    pass",
+            "language": "python",
+            "problem_id": data["problem"].id,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["failed_tests"] == 1
+    assert payload["dominant_failure_type"] in {"WRONG_OUTPUT", "EMPTY_OUTPUT"}
 
 
 def test_run_rejects_blank_code(api_client, db_session):

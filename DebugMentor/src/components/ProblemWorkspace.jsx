@@ -6,7 +6,6 @@ export default function ProblemWorkspace({
   problem,
   code,
   language,
-  availableLanguages,
   activeTab,
   setActiveTab,
   isAnalyzing,
@@ -16,7 +15,6 @@ export default function ProblemWorkspace({
   onCodeChange,
   onRun,
   onSubmit,
-  onLanguageChange,
   revealHint,
   selectedVisibleTestCaseId,
   onSelectVisibleTestCase,
@@ -36,13 +34,11 @@ export default function ProblemWorkspace({
           <CodeEditorPanel
             code={code}
             language={language}
-            availableLanguages={availableLanguages}
             isAnalyzing={isAnalyzing}
             isRunning={isRunning}
             onCodeChange={onCodeChange}
             onRun={onRun}
             onSubmit={onSubmit}
-            onLanguageChange={onLanguageChange}
             analysisResult={analysisResult}
           />
 

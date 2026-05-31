@@ -1,12 +1,17 @@
 export default function PatternExplorerPage({
   patterns = [],
   loading = false,
+  profileData = null,
   expandedPatternId = null,
   patternProblemsById = {},
   loadingPatternId = null,
   onTogglePattern,
   onSelectProblem,
 }) {
+  const snapshot = profileData?.readiness_snapshot
+  const stats = profileData?.stats
+  const recentTrend = profileData?.recent_trend || []
+
   return (
     <main className="pattern-explorer-page">
       <header className="pattern-explorer-header">
@@ -16,6 +21,42 @@ export default function PatternExplorerPage({
           <p>Expand a pattern, then pick a curated problem to open the workspace.</p>
         </div>
       </header>
+
+      {profileData && (
+        <section className="practice-overview">
+          <article className="overview-card">
+            <div className="overview-label">Current streak</div>
+            <div className="overview-value">{snapshot?.recent_streak ?? 0}</div>
+            <div className="overview-subtext">Consecutive passed submissions</div>
+          </article>
+
+          <article className="overview-card">
+            <div className="overview-label">Solved</div>
+            <div className="overview-value">{stats?.passed_submissions ?? 0}</div>
+            <div className="overview-subtext">Problems verified by Submit</div>
+          </article>
+
+          <article className="overview-card">
+            <div className="overview-label">Pass rate</div>
+            <div className="overview-value">{Math.round(stats?.pass_rate ?? 0)}%</div>
+            <div className="overview-subtext">Across all submissions</div>
+          </article>
+
+          <article className="overview-card trend-card">
+            <div className="overview-label">Recent form</div>
+            <div className="trend-strip">
+              {recentTrend.length > 0 ? recentTrend.map((item, index) => (
+                <span
+                  key={`${item}-${index}`}
+                  className={`trend-dot ${item === 'PASS' ? 'pass' : 'fail'}`}
+                  title={item}
+                />
+              )) : <span className="overview-subtext">No submissions yet</span>}
+            </div>
+            <div className="overview-subtext">Last 10 graded submissions</div>
+          </article>
+        </section>
+      )}
 
       <section className="pattern-explorer-list">
         {patterns.map((pattern) => {

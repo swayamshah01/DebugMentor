@@ -102,6 +102,22 @@ export function useAnalysis(token, setToken) {
         success: data.success,
         output: data.output,
         execTime: data.exec_time,
+        totalTests: data.total_tests || 0,
+        passedTests: data.passed_tests || 0,
+        failedTests: data.failed_tests || 0,
+        dominantFailureType: data.dominant_failure_type || null,
+        testCases: (data.test_results || []).map((result, index) => ({
+          id: index + 1,
+          input: result.input || '',
+          label: result.label || '',
+          expected: result.expected_output || '?',
+          actual: result.actual_output || result.error_message || '(no output)',
+          passed: result.status === 'PASSED',
+          status: result.status,
+          errorType: result.error_type || null,
+          executionTimeMs: result.execution_time_ms || 0,
+          isHidden: Boolean(result.is_hidden),
+        })),
       })
     } catch (err) {
       if (handleUnauthorized(err)) return

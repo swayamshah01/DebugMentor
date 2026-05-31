@@ -1,6 +1,7 @@
 export function TestCasesTab({
   problem,
   analysisResult,
+  runResult,
   isAnalyzing,
   selectedVisibleTestCaseId,
   onSelectVisibleTestCase,
@@ -16,9 +17,42 @@ export function TestCasesTab({
 
   if (!analysisResult) {
     const visibleTests = problem?.test_cases || []
+    const practiceResults = runResult?.testCases || []
+    const practiceByLabel = new Map(practiceResults.map((item) => [item.label, item]))
+    const passedVisible = practiceResults.filter((item) => item.passed).length
+    const failedVisible = practiceResults.filter((item) => !item.passed).length
 
     return (
       <div className="fade-in">
+        {practiceResults.length > 0 && (
+          <div className="test-header">
+            <div className="test-count-badge">
+              <span className="tc-badge">Visible Tests</span>
+              <span className="tc-badge pass">{passedVisible} Passed</span>
+              <span className="tc-badge fail">{failedVisible} Failed</span>
+            </div>
+
+            {runResult?.dominantFailureType && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  background: 'rgba(220, 53, 69, 0.08)',
+                  border: '1px solid rgba(220, 53, 69, 0.18)',
+                  borderRadius: 4,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--accent-danger)',
+                }}
+              >
+                {runResult.dominantFailureType.replaceAll('_', ' ')}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="testcase-tabs">
           {visibleTests.map((testCase, index) => (
             <button
@@ -34,11 +68,13 @@ export function TestCasesTab({
 
         {visibleTests.length > 0 ? (
           <div className="leetcode-case-list">
-            {visibleTests.map((testCase, index) => (
+            {visibleTests.map((testCase, index) => {
+              const practice = practiceByLabel.get(testCase.label)
+              return (
               <button
                 key={testCase.id}
                 type="button"
-                className={`leetcode-case-card ${selectedVisibleTestCaseId === testCase.id ? 'active' : ''}`}
+                className={`leetcode-case-card ${selectedVisibleTestCaseId === testCase.id ? 'active' : ''} ${practice ? (practice.passed ? 'passed' : 'failed') : ''}`}
                 onClick={() => onSelectVisibleTestCase && onSelectVisibleTestCase(testCase)}
               >
                 <div className="case-card-title">Case {index + 1}</div>
@@ -50,13 +86,43 @@ export function TestCasesTab({
                   <div className="case-label">Expected</div>
                   <pre>{testCase.expected_output}</pre>
                 </div>
+                {practice && (
+                  <div className="case-field">
+                    <div className="case-label">Actual</div>
+                    <pre>{practice.actual}</pre>
+                  </div>
+                )}
+                {practice && (
+                  <div className="case-field">
+                    <div className="case-label">Status</div>
+                    <pre>{practice.passed ? 'Passed' : (practice.status || 'Failed')}</pre>
+                  </div>
+                )}
               </button>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <div className="empty-state compact">
             <div className="empty-title">No sample cases</div>
             <div className="empty-desc">Choose a problem with visible tests.</div>
+          </div>
+        )}
+
+        {practiceResults.length > 0 && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: '10px 14px',
+              background: failedVisible > 0 ? 'rgba(220, 53, 69, 0.05)' : 'rgba(40, 167, 69, 0.06)',
+              border: `1px solid ${failedVisible > 0 ? 'rgba(220, 53, 69, 0.14)' : 'rgba(40, 167, 69, 0.14)'}`,
+              borderRadius: 6,
+              fontFamily: 'var(--font-body)',
+              fontSize: 13,
+              color: 'var(--text-secondary)',
+            }}
+          >
+            {runResult.output}
           </div>
         )}
       </div>
