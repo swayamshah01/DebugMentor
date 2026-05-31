@@ -84,18 +84,18 @@ export function HintsTab({ analysisResult, isAnalyzing, revealHint }) {
   return (
     <div className="fade-in hints-layout">
       <div className="analysis-summary-card">
-        <div className="analysis-summary-label">Feedback</div>
+        <div className="analysis-summary-label">What to focus on</div>
         <p className="analysis-summary-text">
           {normHints.explanation || bugSummary || 'Your submission did not pass all checks.'}
         </p>
       </div>
 
       <HintCard
-        hint={{ level: 1, title: 'First Hint', text: normHints.hint_1 }}
+        hint={{ level: 1, title: 'Where to look first', text: normHints.hint_1 }}
         revealed={revealedLevel >= 1}
       />
       <HintCard
-        hint={{ level: 2, title: 'Deeper Hint', text: normHints.hint_2 }}
+        hint={{ level: 2, title: 'What to check next', text: normHints.hint_2 }}
         revealed={revealedLevel >= 2}
       />
       <HintCard

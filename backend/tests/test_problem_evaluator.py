@@ -2,6 +2,7 @@
 
 import uuid
 
+from app.engines.llm_layer import build_contextual_fallback
 from app.database import SessionLocal
 from app.models.pattern import Pattern
 from app.models.problem import Problem
@@ -64,3 +65,47 @@ def test_evaluate_problem_submission_uses_stored_test_cases():
 def test_classify_hint_intent_prefers_bug_fix_for_runtime_and_wrong_output():
     assert classify_hint_intent({"dominant_failure_type": "WRONG_OUTPUT"}, []) == "conceptual"
     assert classify_hint_intent({"dominant_failure_type": "RUNTIME_ERROR"}, []) == "bug_fix"
+
+
+def test_build_contextual_fallback_uses_visible_wrong_output_case():
+    result = build_contextual_fallback(
+        language="python",
+        failure_report={
+            "dominant_failure_type": "WRONG_OUTPUT",
+            "test_results": [
+                {
+                    "status": "WRONG_OUTPUT",
+                    "input": "[2, 7, 11, 15]\n9",
+                    "expected_output": "[0, 1]",
+                    "actual_output": "[1, 0]",
+                }
+            ],
+        },
+        ast_issues=[],
+        problem_title="Two Sum",
+    )
+
+    assert "Two Sum" in result["explanation"]
+    assert "[0, 1]" in result["explanation"]
+    assert "visible testcase" in result["hint_1"].lower() or "visible case" in result["hint_1"].lower()
+    assert result["hint_2"]
+
+
+def test_build_contextual_fallback_uses_runtime_error_message():
+    result = build_contextual_fallback(
+        language="python",
+        failure_report={
+            "dominant_failure_type": "RUNTIME_ERROR",
+            "test_results": [
+                {
+                    "status": "RUNTIME_ERROR",
+                    "error_message": "Traceback...\nTypeError: solve() takes 0 positional arguments but 2 were given",
+                }
+            ],
+        },
+        ast_issues=[],
+        problem_title="Two Sum",
+    )
+
+    assert "TypeError" in result["explanation"]
+    assert "function signature" in result["hint_1"].lower()
