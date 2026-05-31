@@ -169,6 +169,24 @@ def test_run_endpoint_executes_function_style_curated_problem(api_client, db_ses
     assert payload["output"].strip() == "8"
 
 
+def test_run_rejects_blank_code(api_client, db_session):
+    client, set_current_user = api_client
+    data = make_curated_problem(db_session)
+    set_current_user(data["user"])
+
+    response = client.post(
+        "/api/run",
+        json={
+            "code": "   \n\t",
+            "language": "python",
+            "problem_id": data["problem"].id,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Write some code before running it."
+
+
 def test_submit_requires_problem_id(api_client, db_session):
     client, set_current_user = api_client
     data = make_curated_problem(db_session)
@@ -207,6 +225,27 @@ def test_submit_rejects_invalid_problem_id(api_client, db_session):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Problem not found"
+    assert before == after
+
+
+def test_submit_rejects_blank_code(api_client, db_session):
+    client, set_current_user = api_client
+    data = make_curated_problem(db_session)
+    set_current_user(data["user"])
+
+    before = db_session.query(Submission).count()
+    response = client.post(
+        "/api/submit",
+        json={
+            "code": "   ",
+            "language": "python",
+            "problem_id": data["problem"].id,
+        },
+    )
+    after = db_session.query(Submission).count()
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Write some code before submitting it."
     assert before == after
 
 

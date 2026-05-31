@@ -64,6 +64,9 @@ def submit_code(
         current_user.id, payload.language, len(payload.code), payload.problem_id,
     )
 
+    if not payload.code or not payload.code.strip():
+        raise HTTPException(status_code=400, detail="Write some code before submitting it.")
+
     if payload.problem_id is None:
         raise HTTPException(status_code=400, detail="problem_id is required for curated submissions")
 

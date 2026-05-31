@@ -58,6 +58,9 @@ def run_code(
     lang = payload.language.lower()
     logger.info("Running code (%d chars) for language: %s", len(payload.code), lang)
 
+    if not payload.code or not payload.code.strip():
+        raise HTTPException(status_code=400, detail="Write some code before running it.")
+
     run_input = payload.test_input or ""
 
     if payload.problem_id is not None:

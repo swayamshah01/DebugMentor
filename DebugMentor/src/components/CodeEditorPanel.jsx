@@ -120,7 +120,7 @@ export default function CodeEditorPanel({
           onMount={handleEditorMount}
           options={{
             fontSize: 14,
-            fontFamily: "'JetBrains Mono', 'Monaco', 'Courier New', monospace",
+            fontFamily: "Consolas, 'Courier New', monospace",
             lineNumbers: 'on',
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
