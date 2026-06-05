@@ -134,7 +134,7 @@ def test_run_endpoint_is_non_persistent(api_client, db_session):
     response = client.post(
         "/api/run",
         json={
-            "code": "print(input())",
+            "code": "def solve(n):\n    return n + 1",
             "language": "python",
             "problem_id": data["problem"].id,
         },

@@ -21,7 +21,7 @@ def test_evaluate_problem_submission_uses_stored_test_cases():
             order_index=1,
         )
         db.add(pattern)
-        db.commit()
+        db.flush()
 
         problem = Problem(
             pattern_id=pattern.id,

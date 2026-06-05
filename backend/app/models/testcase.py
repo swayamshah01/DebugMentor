@@ -22,6 +22,7 @@ class TestCase(Base):
     """
 
     __tablename__ = "test_cases"
+    __test__ = False
 
     id              = Column(Integer, primary_key=True, index=True)
     problem_id      = Column(Integer, ForeignKey("problems.id"), nullable=False, index=True)
