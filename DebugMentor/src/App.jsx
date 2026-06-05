@@ -302,8 +302,9 @@ export default function App() {
       {profileOpen && userId && (
         <ProfileDashboard
           userId={userId}
+          username={username}
           fetchProfile={fetchProfile}
-          token={token}
+          onLogout={handleLogout}
           onClose={() => setProfileOpen(false)}
         />
       )}

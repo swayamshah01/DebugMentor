@@ -54,12 +54,25 @@ class ReadinessSnapshot(BaseModel):
     average_hints: float
 
 
+class BadgeItem(BaseModel):
+    id: str
+    label: str
+    description: str
+    icon: str
+    tone: str
+
+
 class ProfileResponse(BaseModel):
     """Complete learning profile for a user."""
     user_id: int
+    username: str
+    email: str
+    created_at: datetime
     top_mistakes: List[TopMistakeItem]
     submission_history: List[SubmissionHistoryItem]
     stats: StatsInfo
+    solved_problems_count: int = 0
+    badges: Optional[List[BadgeItem]] = None
     recent_trend: Optional[List[str]] = None  # e.g. ["PASS", "FAIL", "PASS", ...]
     weak_patterns: Optional[List[PatternProgressItem]] = None
     recommendations: Optional[List[RecommendationItem]] = None

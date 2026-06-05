@@ -18,12 +18,74 @@ from app.models.pattern import Pattern
 from app.auth import get_current_user
 from app.schemas.profile import (
     TopMistakeItem, SubmissionHistoryItem, StatsInfo, ProfileResponse,
-    PatternProgressItem, RecommendationItem, ReadinessSnapshot,
+    PatternProgressItem, RecommendationItem, ReadinessSnapshot, BadgeItem,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def build_badges(
+    total: int,
+    passed: int,
+    recent_streak: int,
+    avg_hint: float,
+    weak_patterns: list[PatternProgressItem],
+) -> list[BadgeItem]:
+    badges: list[BadgeItem] = []
+
+    if passed >= 1:
+        badges.append(BadgeItem(
+            id="first-accept",
+            label="First Accept",
+            description="Solved your first graded problem.",
+            icon="FA",
+            tone="success",
+        ))
+    if recent_streak >= 3:
+        badges.append(BadgeItem(
+            id="streak-3",
+            label="3-Day Heat",
+            description="Built a streak of 3 passed submissions in a row.",
+            icon="S3",
+            tone="accent",
+        ))
+    if recent_streak >= 5:
+        badges.append(BadgeItem(
+            id="streak-5",
+            label="Locked In",
+            description="Reached a streak of 5 consecutive passed submissions.",
+            icon="S5",
+            tone="accent",
+        ))
+    if total >= 10:
+        badges.append(BadgeItem(
+            id="consistent-practicer",
+            label="Consistent Practicer",
+            description="Completed at least 10 graded submissions.",
+            icon="CP",
+            tone="neutral",
+        ))
+    if passed >= 3 and avg_hint <= 0.75:
+        badges.append(BadgeItem(
+            id="independent-solver",
+            label="Independent Solver",
+            description="Solved multiple problems while using very few hints.",
+            icon="IS",
+            tone="success",
+        ))
+    strong_pattern = next((item for item in weak_patterns if item.mastery_percent >= 80 and item.attempted >= 2), None)
+    if strong_pattern:
+        badges.append(BadgeItem(
+            id=f"pattern-{strong_pattern.pattern_id}",
+            label=f"{strong_pattern.pattern_name} Specialist",
+            description=f"Maintained strong mastery in {strong_pattern.pattern_name}.",
+            icon="PS",
+            tone="warning",
+        ))
+
+    return badges
 
 
 @router.get(
@@ -148,7 +210,7 @@ def get_profile(
         ))
 
     recent_streak = 0
-    for sub, _, _ in reversed(submissions):
+    for sub, _, _ in submissions:
         if sub.status == "passed":
             recent_streak += 1
         else:
@@ -167,14 +229,21 @@ def get_profile(
     
     # 4. Compute recent trend (last 10 submissions)
     recent_trend = []
-    for sub in reversed(submission_history[-10:]):
+    for sub in reversed(submission_history[:10]):
         recent_trend.append("PASS" if sub.status == "passed" else "FAIL")
+
+    badges = build_badges(total, passed, recent_streak, avg_hint, weak_patterns)
     
     return ProfileResponse(
         user_id=user_id,
+        username=current_user.username,
+        email=current_user.email,
+        created_at=current_user.created_at,
         top_mistakes=top_mistakes,
         submission_history=submission_history,
         stats=stats,
+        solved_problems_count=len(solved_problem_ids),
+        badges=badges,
         recent_trend=recent_trend,
         weak_patterns=weak_patterns,
         recommendations=recommendations,

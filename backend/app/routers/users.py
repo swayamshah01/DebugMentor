@@ -1,9 +1,10 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.auth import build_unique_username
+from app.auth import get_password_hash
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
@@ -23,39 +24,32 @@ def create_user(
     payload: UserCreate,
     db: Session = Depends(get_db),
 ) -> UserResponse:
-    """
-    POST /api/users
-
-    Creates a new student account.
-    Returns HTTP 400 if the username or email already exists.
-    """
-    # ── Check for duplicates ───────────────────────────────────────────────────
     email = str(payload.email).lower()
-    existing = db.query(User).filter(User.email == email).first()
+    username = payload.username.strip()
 
-    if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="An account with this email already exists.",
-        )
+    existing_email = db.query(User).filter(func.lower(User.email) == email).first()
+    if existing_email:
+        raise HTTPException(status_code=400, detail="This email is already registered.")
 
-    # ── Create user ────────────────────────────────────────────────────────────
+    existing_username = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="This username is already taken.")
+
     try:
-        username = payload.username or build_unique_username(email, db)
-        user = User(username=username, email=email)
+        user = User(
+            username=username,
+            email=email,
+            hashed_password=get_password_hash(payload.password),
+        )
         db.add(user)
         db.commit()
         db.refresh(user)
         logger.info("User created: id=%s username=%s", user.id, user.username)
         return user
-
     except Exception as exc:
         db.rollback()
         logger.error("User creation failed: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"User creation failed: {str(exc)}",
-        )
+        raise HTTPException(status_code=500, detail=f"User creation failed: {exc}")
 
 
 @router.get(
@@ -67,12 +61,6 @@ def get_user(
     user_id: int,
     db: Session = Depends(get_db),
 ) -> UserResponse:
-    """
-    GET /api/users/{user_id}
-
-    Returns the user record for the given ID.
-    Returns HTTP 404 if the user does not exist.
-    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail=f"User {user_id} not found.")
@@ -89,10 +77,4 @@ def list_users(
     limit: int = 50,
     db: Session = Depends(get_db),
 ) -> list[UserResponse]:
-    """
-    GET /api/users?skip=0&limit=50
-
-    Returns a paginated list of all users.
-    Phase 2: add search/filter by username.
-    """
     return db.query(User).offset(skip).limit(limit).all()

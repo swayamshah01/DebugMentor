@@ -1,15 +1,47 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import axios from 'axios'
 import { useTheme } from '../context/ThemeContext'
 
 const API_BASE = 'http://localhost:8000/api'
 
+function validatePassword(password) {
+  return {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    digit: /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  }
+}
+
+function formatApiError(error, fallbackMessage) {
+  const detail = error?.response?.data?.detail
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail
+  }
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail
+      .map((item) => item?.msg || item?.message || null)
+      .filter(Boolean)
+      .join(' ')
+  }
+  return fallbackMessage
+}
+
 export default function Auth({ setToken, setUsername, onBackToLanding }) {
   const [isLogin, setIsLogin] = useState(true)
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({
+    loginId: '',
+    username: '',
+    email: '',
+    password: '',
+  })
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const { theme, toggleTheme } = useTheme()
+
+  const passwordChecks = useMemo(() => validatePassword(formData.password), [formData.password])
+  const passwordStrong = Object.values(passwordChecks).every(Boolean)
 
   const parseUsernameFromToken = (token) => {
     try {
@@ -20,40 +52,62 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
     }
   }
 
+  const updateField = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }))
+  }
+
+  const switchMode = () => {
+    setIsLogin((current) => !current)
+    setError(null)
+    setFormData({
+      loginId: '',
+      username: '',
+      email: '',
+      password: '',
+    })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
+
+    if (!isLogin && !passwordStrong) {
+      setError('Password does not meet the required strength rules.')
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      let access_token
-      const email = formData.email.trim().toLowerCase()
+      let accessToken
 
       if (isLogin) {
         const formParams = new URLSearchParams()
-        formParams.append('username', email)
+        formParams.append('username', formData.loginId.trim())
         formParams.append('password', formData.password)
+
         const response = await axios.post(`${API_BASE}/login`, formParams, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
-        access_token = response.data.access_token
+        accessToken = response.data.access_token
       } else {
         const response = await axios.post(`${API_BASE}/register`, {
-          email,
+          username: formData.username.trim(),
+          email: formData.email.trim().toLowerCase(),
           password: formData.password,
         })
-        access_token = response.data.access_token
+        accessToken = response.data.access_token
       }
 
-      localStorage.setItem('token', access_token)
-      const name = parseUsernameFromToken(access_token)
+      localStorage.setItem('token', accessToken)
+      const name = parseUsernameFromToken(accessToken)
       if (name) {
         localStorage.setItem('username', name)
         setUsername(name)
       }
-      setToken(access_token)
+      setToken(accessToken)
     } catch (err) {
-      setError(err.response?.data?.detail || `Failed to ${isLogin ? 'sign in' : 'register'}. Is the backend running?`)
+      setError(formatApiError(err, `Failed to ${isLogin ? 'sign in' : 'register'}. Is the backend running?`))
     } finally {
       setIsLoading(false)
     }
@@ -83,9 +137,13 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
     letterSpacing: '0.07em',
   }
 
-  const updateField = (field, value) => {
-    setFormData((current) => ({ ...current, [field]: value }))
-  }
+  const checklistItem = (_, ok) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 12,
+    color: ok ? 'var(--accent-primary)' : 'var(--text-secondary)',
+  })
 
   return (
     <div style={{
@@ -165,22 +223,55 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
         justifyContent: 'center',
         padding: '32px 20px',
       }}>
-        <div style={{ width: '100%', maxWidth: 420 }} className="fade-in">
+        <div style={{ width: '100%', maxWidth: 460 }} className="fade-in">
           <div style={{
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border-bright)',
-            borderRadius: 12,
+            borderRadius: 14,
             padding: '34px 32px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
           }}>
             <div style={{ marginBottom: 28 }}>
-              <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>
-                {isLogin ? 'Sign in' : 'Create account'}
+              <div style={{ display: 'inline-flex', gap: 8, padding: 4, borderRadius: 999, background: 'var(--bg-surface)', border: '1px solid var(--border)', marginBottom: 18 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(true)}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '8px 14px',
+                    background: isLogin ? 'var(--accent-primary)' : 'transparent',
+                    color: isLogin ? '#fff' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(false)}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '8px 14px',
+                    background: !isLogin ? 'var(--accent-primary)' : 'transparent',
+                    color: !isLogin ? '#fff' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sign up
+                </button>
+              </div>
+
+              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>
+                {isLogin ? 'Welcome back' : 'Create your DebugMentor account'}
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
                 {isLogin
-                  ? 'Use your email and password to open your workspace.'
-                  : 'Create one account with your email. Your display name is generated automatically.'}
+                  ? 'Use your username or email with your password to continue your practice.'
+                  : 'Choose a unique username and a strong password so your progress, streaks, and badges stay attached to one account.'}
               </p>
             </div>
 
@@ -200,21 +291,51 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <div>
-                <label style={labelStyle}>Email</label>
-                <input
-                  id="auth-email"
-                  required
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={(e) => updateField('email', e.target.value)}
-                  style={inputStyle}
-                  onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)' }}
-                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-bright)' }}
-                />
-              </div>
+              {isLogin ? (
+                <div>
+                  <label style={labelStyle}>Username or Email</label>
+                  <input
+                    id="auth-login-id"
+                    required
+                    type="text"
+                    autoComplete="username"
+                    placeholder="username or you@example.com"
+                    value={formData.loginId}
+                    onChange={(e) => updateField('loginId', e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label style={labelStyle}>Username</label>
+                    <input
+                      id="auth-username"
+                      required
+                      type="text"
+                      autoComplete="username"
+                      placeholder="letters, numbers, underscores"
+                      value={formData.username}
+                      onChange={(e) => updateField('username', e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Email</label>
+                    <input
+                      id="auth-email"
+                      required
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={(e) => updateField('email', e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label style={labelStyle}>Password</label>
@@ -223,14 +344,45 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
                   required
                   type="password"
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
-                  placeholder={isLogin ? 'Your password' : 'Min 8 characters'}
+                  placeholder={isLogin ? 'Your password' : 'Choose a strong password'}
                   value={formData.password}
                   onChange={(e) => updateField('password', e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)' }}
-                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-bright)' }}
                 />
               </div>
+
+              {!isLogin && (
+                <div style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 10,
+                  padding: 14,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 10,
+                }}>
+                  <div style={checklistItem('At least 8 characters', passwordChecks.length)}>
+                    <span>{passwordChecks.length ? 'OK' : '-'}</span>
+                    <span>8+ characters</span>
+                  </div>
+                  <div style={checklistItem('One uppercase letter', passwordChecks.upper)}>
+                    <span>{passwordChecks.upper ? 'OK' : '-'}</span>
+                    <span>1 uppercase</span>
+                  </div>
+                  <div style={checklistItem('One lowercase letter', passwordChecks.lower)}>
+                    <span>{passwordChecks.lower ? 'OK' : '-'}</span>
+                    <span>1 lowercase</span>
+                  </div>
+                  <div style={checklistItem('One digit', passwordChecks.digit)}>
+                    <span>{passwordChecks.digit ? 'OK' : '-'}</span>
+                    <span>1 digit</span>
+                  </div>
+                  <div style={checklistItem('One special character', passwordChecks.special)}>
+                    <span>{passwordChecks.special ? 'OK' : '-'}</span>
+                    <span>1 special</span>
+                  </div>
+                </div>
+              )}
 
               <button
                 id="auth-submit-btn"
@@ -242,7 +394,7 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
                   background: 'var(--accent-primary)',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: 8,
+                  borderRadius: 10,
                   fontWeight: 700,
                   fontSize: 15,
                   cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -254,15 +406,11 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
             </form>
 
             <p style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
-              {isLogin ? 'New to DebugMentor?' : 'Already have an account?'}
+              {isLogin ? 'Need a new account?' : 'Already have an account?'}
               {' '}
               <button
                 type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin)
-                  setError(null)
-                  setFormData({ email: '', password: '' })
-                }}
+                onClick={switchMode}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -283,8 +431,9 @@ export default function Auth({ setToken, setUsername, onBackToLanding }) {
             fontSize: 12,
             color: 'var(--text-secondary)',
             opacity: 0.75,
+            lineHeight: 1.6,
           }}>
-            Your practice history stays connected to your email account.
+            Your profile stores submissions, streaks, badges, and learning progress under the same account.
           </p>
         </div>
       </div>
