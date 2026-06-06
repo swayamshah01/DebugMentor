@@ -31,7 +31,6 @@ export default function App() {
     }
   })
   const [screen, setScreen] = useState(() => token ? 'explorer' : 'landing')
-  const [profileOpen, setProfileOpen] = useState(false)
 
   const [patterns, setPatterns] = useState([])
   const [patternsLoading, setPatternsLoading] = useState(false)
@@ -255,10 +254,10 @@ export default function App() {
         backendOnline={backendOnline}
         username={username}
         onLogout={handleLogout}
-        onProfileOpen={() => setProfileOpen(true)}
-        showBackToPatterns={screen === 'workspace'}
+        onProfileOpen={() => setScreen('profile')}
+        showBackToPatterns={screen === 'workspace' || screen === 'profile'}
         onBackToPatterns={handleBackToExplorer}
-        problem={selectedProblemDetail}
+        problem={screen === 'workspace' ? selectedProblemDetail : null}
       />
 
       {screen === 'explorer' ? (
@@ -271,6 +270,14 @@ export default function App() {
           loadingPatternId={patternLoadingId}
           onTogglePattern={handleTogglePattern}
           onSelectProblem={handleProblemSelect}
+        />
+      ) : screen === 'profile' ? (
+        <ProfileDashboard
+          userId={userId}
+          username={username}
+          fetchProfile={fetchProfile}
+          onLogout={handleLogout}
+          onBack={handleBackToExplorer}
         />
       ) : (
         <ProblemWorkspace
@@ -293,19 +300,11 @@ export default function App() {
         />
       )}
 
-      <StatusBar
-        language={language}
-        isAnalyzing={isAnalyzing}
-        analysisResult={analysisResult}
-      />
-
-      {profileOpen && userId && (
-        <ProfileDashboard
-          userId={userId}
-          username={username}
-          fetchProfile={fetchProfile}
-          onLogout={handleLogout}
-          onClose={() => setProfileOpen(false)}
+      {screen !== 'profile' && (
+        <StatusBar
+          language={language}
+          isAnalyzing={isAnalyzing}
+          analysisResult={analysisResult}
         />
       )}
     </div>

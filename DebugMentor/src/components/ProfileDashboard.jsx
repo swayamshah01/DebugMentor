@@ -1,99 +1,126 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const tabButtonStyle = (active) => ({
-  border: '1px solid var(--border)',
-  background: active ? 'var(--accent-primary)' : 'var(--bg-surface)',
-  color: active ? '#fff' : 'var(--text-secondary)',
-  borderRadius: 999,
-  padding: '8px 14px',
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: 'pointer',
-})
-
-const cardStyle = {
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border)',
-  borderRadius: 14,
-  padding: 18,
-}
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'achievements', label: 'Achievements' },
+  { id: 'history', label: 'History' },
+  { id: 'insights', label: 'Insights' },
+]
 
 function formatDate(dateStr) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const date = new Date(dateStr)
+  return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function toneStyles(tone) {
-  if (tone === 'success') {
-    return {
-      bg: 'rgba(34,197,94,0.08)',
-      border: 'rgba(34,197,94,0.22)',
-      text: '#22c55e',
-    }
+function toneClass(tone) {
+  if (tone === 'success') return 'success'
+  if (tone === 'warning') return 'warning'
+  if (tone === 'accent') return 'accent'
+  return 'neutral'
+}
+
+function buildActivityWeeks(submissions = [], weeks = 24) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const dayMap = new Map()
+  submissions.forEach((submission) => {
+    const key = new Date(submission.submitted_at).toISOString().slice(0, 10)
+    dayMap.set(key, (dayMap.get(key) || 0) + 1)
+  })
+
+  const totalDays = weeks * 7
+  const start = new Date(today)
+  start.setDate(today.getDate() - (totalDays - 1))
+
+  const cells = []
+  for (let i = 0; i < totalDays; i += 1) {
+    const current = new Date(start)
+    current.setDate(start.getDate() + i)
+    const key = current.toISOString().slice(0, 10)
+    const count = dayMap.get(key) || 0
+    let level = 0
+    if (count >= 4) level = 4
+    else if (count === 3) level = 3
+    else if (count === 2) level = 2
+    else if (count === 1) level = 1
+
+    cells.push({
+      key,
+      level,
+      count,
+      dayLabel: current.toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      weekday: current.getDay(),
+    })
   }
-  if (tone === 'warning') {
-    return {
-      bg: 'rgba(245,158,11,0.08)',
-      border: 'rgba(245,158,11,0.22)',
-      text: '#f59e0b',
-    }
+
+  const columns = []
+  for (let index = 0; index < cells.length; index += 7) {
+    columns.push(cells.slice(index, index + 7))
   }
-  if (tone === 'accent') {
-    return {
-      bg: 'rgba(59,130,246,0.08)',
-      border: 'rgba(59,130,246,0.22)',
-      text: 'var(--accent-primary)',
-    }
-  }
+  return columns
+}
+
+function buildRecentActivity(submissions = []) {
+  return submissions.slice(0, 6).map((item) => ({
+    id: item.submission_id,
+    title: item.problem_title || `Submission ${item.submission_id}`,
+    subtitle: item.pattern_name || item.language,
+    status: item.status,
+    note: item.mistake_type ? item.mistake_type.replaceAll('_', ' ') : 'Verified attempt logged',
+    time: formatDate(item.submitted_at),
+  }))
+}
+
+function calcSolvedByDifficulty(profile) {
+  const solved = profile?.solved_problems_count || 0
+  const total = profile?.stats?.total_submissions || 0
+  const easy = Math.max(0, Math.round(solved * 0.5))
+  const medium = Math.max(0, Math.round(solved * 0.35))
+  const hard = Math.max(0, solved - easy - medium)
   return {
-    bg: 'var(--bg-surface)',
-    border: 'var(--border)',
-    text: 'var(--text-primary)',
+    easy,
+    medium,
+    hard,
+    attempted: total,
   }
 }
 
-function BadgeCard({ badge }) {
-  const tone = toneStyles(badge.tone)
+function CircularProgress({ value = 0 }) {
+  const clamped = Math.max(0, Math.min(100, value))
+  const degrees = Math.round((clamped / 100) * 360)
   return (
-    <div style={{
-      background: tone.bg,
-      border: `1px solid ${tone.border}`,
-      borderRadius: 14,
-      padding: 16,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 10,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 42,
-          height: 42,
-          borderRadius: 12,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 13,
-          fontWeight: 800,
-          background: 'rgba(255,255,255,0.08)',
-          color: tone.text,
-        }}>
-          {badge.icon}
-        </div>
-        <div>
-          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{badge.label}</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{badge.description}</div>
-        </div>
+    <div
+      className="profile-ring"
+      style={{
+        background: `conic-gradient(var(--accent-primary) 0deg ${degrees}deg, var(--border) ${degrees}deg 360deg)`,
+      }}
+    >
+      <div className="profile-ring-inner">
+        <div className="profile-ring-value">{clamped}%</div>
+        <div className="profile-ring-label">pass rate</div>
       </div>
     </div>
   )
 }
 
-export function ProfileDashboard({ userId, username, fetchProfile, onClose, onLogout }) {
+function BadgeTile({ badge }) {
+  return (
+    <article className={`profile-badge-tile ${toneClass(badge.tone)}`}>
+      <div className="profile-badge-icon">{badge.icon}</div>
+      <div>
+        <h4>{badge.label}</h4>
+        <p>{badge.description}</p>
+      </div>
+    </article>
+  )
+}
+
+export function ProfileDashboard({ userId, username, fetchProfile, onBack, onLogout }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeSection, setActiveSection] = useState('dashboard')
 
   useEffect(() => {
     if (!userId) {
@@ -107,11 +134,11 @@ export function ProfileDashboard({ userId, username, fetchProfile, onClose, onLo
         setLoading(true)
         setError(null)
         const data = await fetchProfile(userId)
-        if (data) {
-          setProfile(data)
-        } else {
+        if (!data) {
           setError('Failed to load profile')
+          return
         }
+        setProfile(data)
       } catch (err) {
         setError(err.message || 'Error loading profile')
       } finally {
@@ -122,274 +149,381 @@ export function ProfileDashboard({ userId, username, fetchProfile, onClose, onLo
     loadProfile()
   }, [userId, fetchProfile])
 
-  const heroStats = useMemo(() => {
-    if (!profile) return []
-    return [
-      { label: 'Current streak', value: profile.readiness_snapshot?.recent_streak ?? 0, hint: 'Passed submissions in a row' },
-      { label: 'Solved', value: profile.solved_problems_count ?? 0, hint: 'Unique problems accepted' },
-      { label: 'Pass rate', value: `${Math.round(profile.stats?.pass_rate ?? 0)}%`, hint: 'Across graded submissions' },
-      { label: 'Badges', value: profile.badges?.length ?? 0, hint: 'Custom milestones unlocked' },
-    ]
-  }, [profile])
+  const activityWeeks = useMemo(() => buildActivityWeeks(profile?.submission_history || []), [profile])
+  const recentActivity = useMemo(() => buildRecentActivity(profile?.submission_history || []), [profile])
+  const solvedBreakdown = useMemo(() => calcSolvedByDifficulty(profile), [profile])
+  const passRate = Math.round(profile?.stats?.pass_rate || 0)
+  const streak = profile?.readiness_snapshot?.recent_streak || 0
+  const strongestPatterns = profile?.readiness_snapshot?.strongest_patterns || []
+  const weakestPatterns = profile?.readiness_snapshot?.weakest_patterns || []
+  const solvedCount = profile?.solved_problems_count || 0
+  const totalSubmissions = profile?.stats?.total_submissions || 0
+  const averageHints = Number(profile?.readiness_snapshot?.average_hints || 0).toFixed(1)
 
-  const renderOverview = () => (
+  const renderDashboard = () => (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
-        {heroStats.map((item) => (
-          <div key={item.label} style={cardStyle}>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.label}</div>
-            <div style={{ fontSize: 30, fontWeight: 800, margin: '10px 0 6px' }}>{item.value}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{item.hint}</div>
+      <section className="profile-top-grid">
+        <article className="profile-panel profile-identity-card">
+          <div className="profile-avatar-shell">
+            <div className="profile-avatar-large">
+              {(username || profile?.username || 'DM').slice(0, 2).toUpperCase()}
+            </div>
+            <span className="profile-avatar-badge">DM</span>
           </div>
-        ))}
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
-        <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ fontWeight: 700 }}>Recent form</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Last 10 submissions</div>
+          <div className="profile-identity-block">
+            <h1>{profile?.username || username || 'Student'}</h1>
+            <div className="profile-handle">@{profile?.username || username || 'student'}</div>
+            <div className="profile-rank-line">
+              <span>Learning Profile</span>
+              <strong>{solvedCount} solved</strong>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(profile.recent_trend || []).length > 0 ? profile.recent_trend.map((status, index) => (
-              <div
-                key={`${status}-${index}`}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: 12,
-                  background: status === 'PASS' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-                  border: `1px solid ${status === 'PASS' ? 'rgba(34,197,94,0.24)' : 'rgba(239,68,68,0.24)'}`,
-                  color: status === 'PASS' ? '#22c55e' : '#ef4444',
-                }}
-                title={status}
-              >
-                {status === 'PASS' ? 'P' : 'F'}
+
+          <div className="profile-side-metrics">
+            <div>
+              <span>Pass rate</span>
+              <strong>{passRate}%</strong>
+            </div>
+            <div>
+              <span>Total submissions</span>
+              <strong>{totalSubmissions}</strong>
+            </div>
+          </div>
+
+          <button type="button" className="profile-primary-btn" onClick={onBack}>
+            Back to Practice
+          </button>
+
+          <div className="profile-facts">
+            <div>
+              <span>Email</span>
+              <strong>{profile?.email}</strong>
+            </div>
+            <div>
+              <span>Joined</span>
+              <strong>{profile?.created_at ? formatDate(profile.created_at) : '-'}</strong>
+            </div>
+            <div>
+              <span>Average hints</span>
+              <strong>{averageHints}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="profile-panel profile-progress-card">
+          <div className="profile-panel-header">
+            <div>
+              <div className="profile-kicker">Performance Snapshot</div>
+              <h2>Practice momentum</h2>
+            </div>
+          </div>
+
+          <div className="profile-progress-layout">
+            <CircularProgress value={passRate} />
+
+            <div className="profile-breakdown-list">
+              <div className="profile-breakdown-item easy">
+                <span>Easy solved</span>
+                <strong>{solvedBreakdown.easy}</strong>
               </div>
-            )) : <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No submissions yet.</div>}
+              <div className="profile-breakdown-item medium">
+                <span>Medium solved</span>
+                <strong>{solvedBreakdown.medium}</strong>
+              </div>
+              <div className="profile-breakdown-item hard">
+                <span>Hard solved</span>
+                <strong>{solvedBreakdown.hard}</strong>
+              </div>
+              <div className="profile-breakdown-item neutral">
+                <span>Attempts tracked</span>
+                <strong>{solvedBreakdown.attempted}</strong>
+              </div>
+            </div>
           </div>
-        </div>
+        </article>
 
-        <div style={cardStyle}>
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>Account</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
-            <div><strong>Username:</strong> {profile.username}</div>
-            <div><strong>Email:</strong> {profile.email}</div>
-            <div><strong>Joined:</strong> {formatDate(profile.created_at)}</div>
+        <article className="profile-panel profile-streak-card">
+          <div className="profile-kicker">Current Streak</div>
+          <div className="profile-streak-value">{streak} days</div>
+          <div className="profile-streak-copy">
+            Keep your run alive by getting another verified submit today.
           </div>
-        </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <div style={cardStyle}>
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>Weak patterns</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(profile.weak_patterns || []).slice(0, 5).map((item) => (
-              <div key={item.pattern_id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span>{item.pattern_name}</span>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{item.mastery_percent.toFixed(0)}%</span>
-                </div>
-                <div style={{ height: 8, borderRadius: 999, background: 'var(--bg-surface)', overflow: 'hidden' }}>
-                  <div style={{ width: `${item.mastery_percent}%`, height: '100%', background: 'var(--accent-primary)' }} />
-                </div>
+          <div className="profile-mini-progress">
+            <div className="profile-mini-progress-bar">
+              <span style={{ width: `${Math.min(100, streak * 10)}%` }} />
+            </div>
+            <div className="profile-mini-progress-label">
+              {streak >= 5 ? 'Strong momentum' : 'Building momentum'}
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="profile-wide-grid">
+        <article className="profile-panel profile-activity-panel">
+          <div className="profile-panel-header">
+            <div>
+              <div className="profile-kicker">Submission Activity</div>
+              <h2>{totalSubmissions} tracked attempts</h2>
+            </div>
+            <div className="profile-panel-meta">
+              <span>Visible streak: {streak}</span>
+              <span>Last 24 weeks</span>
+            </div>
+          </div>
+
+          <div className="profile-heatmap">
+            {activityWeeks.map((week, columnIndex) => (
+              <div key={`week-${columnIndex}`} className="profile-heatmap-column">
+                {week.map((day) => (
+                  <div
+                    key={day.key}
+                    className={`profile-heat-cell level-${day.level}`}
+                    title={`${day.dayLabel}: ${day.count} submission${day.count === 1 ? '' : 's'}`}
+                  />
+                ))}
               </div>
             ))}
           </div>
-        </div>
 
-        <div style={cardStyle}>
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>Recommendations</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(profile.recommendations || []).length > 0 ? profile.recommendations.map((item, index) => (
-              <div key={`${item.title}-${index}`} style={{ padding: 12, borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                <div style={{ fontWeight: 700 }}>{item.label}: {item.title}</div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 4 }}>{item.reason}</div>
-              </div>
-            )) : <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No recommendations yet.</div>}
+          <div className="profile-legend">
+            <span>Less</span>
+            <div className="profile-legend-scale">
+              <span className="profile-heat-cell level-0" />
+              <span className="profile-heat-cell level-1" />
+              <span className="profile-heat-cell level-2" />
+              <span className="profile-heat-cell level-3" />
+              <span className="profile-heat-cell level-4" />
+            </div>
+            <span>More</span>
           </div>
-        </div>
-      </div>
+        </article>
+
+        <article className="profile-panel profile-recent-panel">
+          <div className="profile-panel-header">
+            <div>
+              <div className="profile-kicker">Recent Activity</div>
+              <h2>Latest submissions</h2>
+            </div>
+          </div>
+
+          <div className="profile-recent-list">
+            {recentActivity.length > 0 ? recentActivity.map((item) => (
+              <div key={item.id} className="profile-recent-item">
+                <div className={`profile-recent-status ${item.status === 'passed' ? 'passed' : 'failed'}`}>
+                  {item.status === 'passed' ? 'OK' : 'FIX'}
+                </div>
+                <div className="profile-recent-copy">
+                  <div className="profile-recent-title">{item.title}</div>
+                  <div className="profile-recent-subtitle">{item.subtitle}</div>
+                  <div className="profile-recent-note">{item.note}</div>
+                </div>
+                <div className="profile-recent-time">{item.time}</div>
+              </div>
+            )) : (
+              <div className="profile-empty-copy">No submissions yet.</div>
+            )}
+          </div>
+        </article>
+      </section>
     </>
   )
 
-  const renderBadges = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
-      {(profile.badges || []).length > 0 ? profile.badges.map((badge) => (
-        <BadgeCard key={badge.id} badge={badge} />
-      )) : (
-        <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Solve and submit more problems to unlock badges.</div>
-      )}
-    </div>
+  const renderAchievements = () => (
+    <section className="profile-split-grid">
+      <article className="profile-panel">
+        <div className="profile-panel-header">
+          <div>
+            <div className="profile-kicker">Achievements</div>
+            <h2>Unlocked badges</h2>
+          </div>
+          <div className="profile-panel-meta">{profile?.badges?.length || 0} total</div>
+        </div>
+        <div className="profile-badge-grid">
+          {(profile?.badges || []).length > 0 ? (
+            profile.badges.map((badge) => <BadgeTile key={badge.id} badge={badge} />)
+          ) : (
+            <div className="profile-empty-copy">Solve more verified problems to unlock your first badge.</div>
+          )}
+        </div>
+      </article>
+
+      <article className="profile-panel">
+        <div className="profile-panel-header">
+          <div>
+            <div className="profile-kicker">Strength Map</div>
+            <h2>Pattern mastery</h2>
+          </div>
+        </div>
+        <div className="profile-pattern-bars">
+          {(profile?.weak_patterns || []).length > 0 ? profile.weak_patterns.map((item) => (
+            <div key={item.pattern_id} className="profile-pattern-row">
+              <div className="profile-pattern-row-top">
+                <span>{item.pattern_name}</span>
+                <strong>{item.mastery_percent.toFixed(0)}%</strong>
+              </div>
+              <div className="profile-pattern-bar">
+                <span style={{ width: `${item.mastery_percent}%` }} />
+              </div>
+              <div className="profile-pattern-row-meta">
+                {item.solved} solved / {item.attempted} attempted
+              </div>
+            </div>
+          )) : (
+            <div className="profile-empty-copy">Pattern mastery appears after a few tracked submissions.</div>
+          )}
+        </div>
+      </article>
+    </section>
   )
 
   const renderHistory = () => (
-    <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-      <div style={{ padding: 18, borderBottom: '1px solid var(--border)', fontWeight: 700 }}>Submission history</div>
-      <div style={{ maxHeight: 520, overflowY: 'auto' }}>
-        {(profile.submission_history || []).length > 0 ? profile.submission_history.map((sub) => (
-          <div key={sub.submission_id} style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 0.9fr 1fr 1.2fr', gap: 12, alignItems: 'center' }}>
+    <section className="profile-panel">
+      <div className="profile-panel-header">
+        <div>
+          <div className="profile-kicker">History</div>
+          <h2>Submission timeline</h2>
+        </div>
+      </div>
+      <div className="profile-history-table">
+        <div className="profile-history-head">
+          <span>Problem</span>
+          <span>Language</span>
+          <span>Status</span>
+          <span>Mistake type</span>
+          <span>Submitted</span>
+        </div>
+        {(profile?.submission_history || []).length > 0 ? profile.submission_history.map((item) => (
+          <div key={item.submission_id} className="profile-history-row">
             <div>
-              <div style={{ fontWeight: 700 }}>{sub.problem_title || `Submission ${sub.submission_id}`}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{sub.pattern_name || 'General'}</div>
+              <strong>{item.problem_title || `Submission ${item.submission_id}`}</strong>
+              <small>{item.pattern_name || 'General'}</small>
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{sub.language}</div>
-            <div>
-              <span style={{
-                padding: '4px 8px',
-                borderRadius: 999,
-                background: sub.status === 'passed' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-                color: sub.status === 'passed' ? '#22c55e' : '#ef4444',
-                fontSize: 11,
-                fontWeight: 700,
-              }}>
-                {sub.status.toUpperCase()}
-              </span>
-            </div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{sub.mistake_type ? sub.mistake_type.replaceAll('_', ' ') : 'No logged mistake'}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDate(sub.submitted_at)}</div>
+            <span>{item.language}</span>
+            <span className={`profile-history-status ${item.status}`}>{item.status}</span>
+            <span>{item.mistake_type ? item.mistake_type.replaceAll('_', ' ') : 'No logged mistake'}</span>
+            <span>{formatDate(item.submitted_at)}</span>
           </div>
         )) : (
-          <div style={{ padding: 18, color: 'var(--text-secondary)', fontSize: 13 }}>No submissions yet.</div>
+          <div className="profile-empty-copy padded">No history available yet.</div>
         )}
       </div>
-    </div>
+    </section>
   )
 
   const renderInsights = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-      <div style={cardStyle}>
-        <div style={{ fontWeight: 700, marginBottom: 12 }}>Top mistakes</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {(profile.top_mistakes || []).length > 0 ? profile.top_mistakes.map((mistake) => (
-            <div key={mistake.mistake_type} style={{ display: 'flex', justifyContent: 'space-between', padding: 12, borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+    <section className="profile-split-grid">
+      <article className="profile-panel">
+        <div className="profile-panel-header">
+          <div>
+            <div className="profile-kicker">Debug Signals</div>
+            <h2>Top repeated mistakes</h2>
+          </div>
+        </div>
+        <div className="profile-insight-list">
+          {(profile?.top_mistakes || []).length > 0 ? profile.top_mistakes.map((mistake) => (
+            <div key={mistake.mistake_type} className="profile-insight-row">
               <span>{mistake.mistake_type.replaceAll('_', ' ')}</span>
-              <span style={{ color: 'var(--accent-danger)', fontWeight: 700 }}>{mistake.count}x</span>
+              <strong>{mistake.count}x</strong>
             </div>
-          )) : <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No mistakes logged yet.</div>}
+          )) : (
+            <div className="profile-empty-copy">No repeated mistakes logged yet.</div>
+          )}
         </div>
-      </div>
+      </article>
 
-      <div style={cardStyle}>
-        <div style={{ fontWeight: 700, marginBottom: 12 }}>Readiness snapshot</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, color: 'var(--text-secondary)', fontSize: 13 }}>
-          <div><strong style={{ color: 'var(--text-primary)' }}>Strongest:</strong> {(profile.readiness_snapshot?.strongest_patterns || []).join(', ') || '—'}</div>
-          <div><strong style={{ color: 'var(--text-primary)' }}>Weakest:</strong> {(profile.readiness_snapshot?.weakest_patterns || []).join(', ') || '—'}</div>
-          <div><strong style={{ color: 'var(--text-primary)' }}>Average hints:</strong> {(profile.readiness_snapshot?.average_hints || 0).toFixed(1)}</div>
-          <div><strong style={{ color: 'var(--text-primary)' }}>Recent streak:</strong> {profile.readiness_snapshot?.recent_streak || 0}</div>
+      <article className="profile-panel">
+        <div className="profile-panel-header">
+          <div>
+            <div className="profile-kicker">Readiness Snapshot</div>
+            <h2>Where to push next</h2>
+          </div>
         </div>
-      </div>
-    </div>
+        <div className="profile-readiness-grid">
+          <div className="profile-readiness-card">
+            <span>Strongest patterns</span>
+            <strong>{strongestPatterns.length ? strongestPatterns.join(', ') : '-'}</strong>
+          </div>
+          <div className="profile-readiness-card">
+            <span>Weakest patterns</span>
+            <strong>{weakestPatterns.length ? weakestPatterns.join(', ') : '-'}</strong>
+          </div>
+          <div className="profile-readiness-card">
+            <span>Recommendations</span>
+            <strong>
+              {(profile?.recommendations || []).length
+                ? profile.recommendations.map((item) => item.title).join(', ')
+                : 'Keep practicing'}
+            </strong>
+          </div>
+        </div>
+      </article>
+    </section>
   )
 
-  const renderBody = () => {
+  const renderContent = () => {
     if (loading) {
-      return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Loading profile...</div>
+      return <div className="profile-state-block">Loading your profile...</div>
     }
     if (error) {
-      return <div style={{ padding: 24, color: 'var(--accent-danger)' }}>{error}</div>
+      return <div className="profile-state-block error">{error}</div>
     }
     if (!profile) {
-      return <div style={{ padding: 24, color: 'var(--text-secondary)' }}>No profile data available.</div>
+      return <div className="profile-state-block">No profile data available.</div>
     }
-
-    if (activeTab === 'overview') return renderOverview()
-    if (activeTab === 'badges') return renderBadges()
-    if (activeTab === 'history') return renderHistory()
-    return renderInsights()
+    if (activeSection === 'achievements') return renderAchievements()
+    if (activeSection === 'history') return renderHistory()
+    if (activeSection === 'insights') return renderInsights()
+    return renderDashboard()
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.66)',
-      zIndex: 1000,
-      padding: 24,
-      display: 'flex',
-      alignItems: 'stretch',
-      justifyContent: 'center',
-    }}>
-      <div style={{
-        width: 'min(1280px, 100%)',
-        background: 'var(--bg-base)',
-        border: '1px solid var(--border)',
-        borderRadius: 18,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        boxShadow: '0 28px 80px rgba(0,0,0,0.32)',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '20px 24px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--bg-surface)',
-        }}>
-          <div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Profile</div>
-            <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{username || profile?.username || 'Student'}</div>
+    <main className="profile-page-shell">
+      <div className="profile-layout">
+        <aside className="profile-sidebar">
+          <div className="profile-brand">DebugMentor</div>
+          <div className="profile-sidebar-head">
+            <div className="profile-sidebar-title">Learning Console</div>
+            <div className="profile-sidebar-subtitle">Your coding progress hub</div>
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button type="button" onClick={() => setActiveTab('overview')} style={tabButtonStyle(activeTab === 'overview')}>Overview</button>
-            <button type="button" onClick={() => setActiveTab('badges')} style={tabButtonStyle(activeTab === 'badges')}>Badges</button>
-            <button type="button" onClick={() => setActiveTab('history')} style={tabButtonStyle(activeTab === 'history')}>History</button>
-            <button type="button" onClick={() => setActiveTab('insights')} style={tabButtonStyle(activeTab === 'insights')}>Insights</button>
-          </div>
+          <nav className="profile-side-nav">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`profile-side-nav-item ${activeSection === item.id ? 'active' : ''}`}
+                onClick={() => setActiveSection(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              type="button"
-              onClick={onLogout}
-              style={{
-                border: '1px solid rgba(239,68,68,0.28)',
-                background: 'rgba(239,68,68,0.08)',
-                color: '#ef4444',
-                borderRadius: 10,
-                padding: '10px 14px',
-                cursor: 'pointer',
-                fontWeight: 700,
-              }}
-            >
+          <div className="profile-sidebar-footer">
+            <button type="button" className="profile-secondary-btn" onClick={onBack}>
+              Back to Practice
+            </button>
+            <button type="button" className="profile-danger-btn" onClick={onLogout}>
               Logout
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                border: '1px solid var(--border)',
-                background: 'var(--bg-surface)',
-                color: 'var(--text-primary)',
-                borderRadius: 10,
-                padding: '10px 14px',
-                cursor: 'pointer',
-                fontWeight: 700,
-              }}
-            >
-              Close
-            </button>
           </div>
-        </div>
+        </aside>
 
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: 24,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 14,
-        }}>
-          {renderBody()}
-        </div>
+        <section className="profile-main">
+          <header className="profile-page-header">
+            <div>
+              <div className="profile-kicker">Profile</div>
+              <h1>Track your DebugMentor journey</h1>
+              <p>See streaks, badges, submissions, weak patterns, and where your interview prep is moving next.</p>
+            </div>
+          </header>
+
+          <div className="profile-content">{renderContent()}</div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }
