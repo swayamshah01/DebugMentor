@@ -69,6 +69,7 @@ def test_classify_hint_intent_prefers_bug_fix_for_runtime_and_wrong_output():
 
 def test_build_contextual_fallback_uses_visible_wrong_output_case():
     result = build_contextual_fallback(
+        code="def two_sum(nums, target):\n    return [1, 0]",
         language="python",
         failure_report={
             "dominant_failure_type": "WRONG_OUTPUT",
@@ -83,16 +84,19 @@ def test_build_contextual_fallback_uses_visible_wrong_output_case():
         },
         ast_issues=[],
         problem_title="Two Sum",
+        pattern_name="Arrays",
     )
 
     assert "Two Sum" in result["explanation"]
     assert "[0, 1]" in result["explanation"]
-    assert "visible testcase" in result["hint_1"].lower() or "visible case" in result["hint_1"].lower()
+    assert "two_sum" in result["hint_1"]
+    assert "example" in result["hint_1"].lower() or "visible" in result["hint_1"].lower()
     assert result["hint_2"]
 
 
 def test_build_contextual_fallback_uses_runtime_error_message():
     result = build_contextual_fallback(
+        code="def solve():\n    return []",
         language="python",
         failure_report={
             "dominant_failure_type": "RUNTIME_ERROR",
@@ -107,5 +111,29 @@ def test_build_contextual_fallback_uses_runtime_error_message():
         problem_title="Two Sum",
     )
 
-    assert "TypeError" in result["explanation"]
-    assert "function signature" in result["hint_1"].lower()
+    assert "wrong parameters" in result["explanation"] or "TypeError" in result["explanation"]
+    assert "solve" in result["hint_1"]
+
+
+def test_build_contextual_fallback_personalizes_compile_error():
+    result = build_contextual_fallback(
+        code="vector<int> two_sum(string nums, string target) {\n    return {};\n}",
+        language="cpp",
+        failure_report={
+            "dominant_failure_type": "COMPILE_ERROR",
+            "test_results": [
+                {
+                    "status": "COMPILE_ERROR",
+                    "label": "Example 1",
+                    "error_summary": "Error: no matching function for call to 'two_sum'",
+                }
+            ],
+        },
+        ast_issues=[],
+        problem_title="Two Sum",
+        pattern_name="Arrays",
+    )
+
+    assert "not compiling" in result["explanation"]
+    assert "two_sum" in result["hint_1"]
+    assert "signature" in result["hint_1"].lower()

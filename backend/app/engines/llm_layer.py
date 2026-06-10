@@ -50,6 +50,14 @@ You must reply strictly in valid JSON format with EXACTLY the following four key
 
 Do not include markdown fences, preamble text, or extra keys."""
 
+GENERIC_PHRASES = (
+    "review your logic",
+    "review the basic structure",
+    "look closely at error stack traces",
+    "common logical",
+    "step by step",
+)
+
 
 def _first_sentence(text: str) -> str:
     if not text:
@@ -71,6 +79,60 @@ def _clean_runtime_error(error_message: str) -> str:
         if ":" in line or "Error" in line or "Exception" in line:
             return line
     return lines[-1]
+
+
+def _extract_primary_symbol(code: str, language: str) -> Optional[str]:
+    lang = (language or "").lower()
+    if lang == "python":
+        try:
+            import ast
+            tree = ast.parse(code)
+            for node in tree.body:
+                if isinstance(node, ast.FunctionDef):
+                    return node.name
+        except Exception:
+            return None
+        return None
+
+    patterns = {
+        "javascript": r"function\s+([A-Za-z_]\w*)\s*\(",
+        "js": r"function\s+([A-Za-z_]\w*)\s*\(",
+        "java": r"(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z_<>\[\]]+\s+([A-Za-z_]\w*)\s*\(",
+        "cpp": r"(?:int|long|double|float|bool|string|vector<[^>]+>|auto)\s+([A-Za-z_]\w*)\s*\(",
+        "c++": r"(?:int|long|double|float|bool|string|vector<[^>]+>|auto)\s+([A-Za-z_]\w*)\s*\(",
+    }
+    pattern = patterns.get(lang)
+    if not pattern:
+        return None
+    match = re.search(pattern, code)
+    return match.group(1) if match else None
+
+
+def _history_note(mistake_history: str) -> str:
+    if not mistake_history:
+        return ""
+    return f" Your recent history suggests this bug pattern has shown up before, so it is worth slowing down on the same kind of check here."
+
+
+def _specific_runtime_observation(error_message: str, function_name: Optional[str], language: str) -> str:
+    cleaned = _clean_runtime_error(error_message)
+    if "takes 0 positional arguments but" in cleaned and function_name:
+        return f"`{function_name}` is defined with the wrong parameters for the testcase runner."
+    if "missing" in cleaned.lower() and "argument" in cleaned.lower() and function_name:
+        return f"`{function_name}` is being called with arguments your current definition does not accept."
+    if "cannot convert" in cleaned.lower() or "no matching function" in cleaned.lower():
+        return "The function signature or return type does not match what the problem expects."
+    if "expected" in cleaned.lower() and "vector" in cleaned.lower():
+        return "The compiler is telling you the function types do not match the intended DSA contract."
+    return cleaned
+
+
+def _is_generic_payload(result_json: Dict[str, Any]) -> bool:
+    combined = " ".join(
+        str(result_json.get(key, "")).lower()
+        for key in ("explanation", "hint_1", "hint_2")
+    )
+    return any(phrase in combined for phrase in GENERIC_PHRASES)
 
 
 def _summarize_ast_issue(issue: Dict[str, Any]) -> str:
@@ -176,15 +238,22 @@ def extract_json_with_fallback(text: str) -> Dict[str, Any]:
 
 
 def build_contextual_fallback(
+    code: str,
     language: str,
     failure_report: Dict[str, Any],
     ast_issues: List[Dict[str, Any]],
     problem_title: Optional[str] = None,
+    pattern_name: Optional[str] = None,
+    mistake_history: str = "",
 ) -> Dict[str, Any]:
     title = _normalise_problem_name(problem_title)
+    symbol = _extract_primary_symbol(code, language)
+    symbol_ref = f"`{symbol}`" if symbol else "your function"
     dominant_failure = failure_report.get("dominant_failure_type", "UNKNOWN")
     test_results = failure_report.get("test_results", [])
     failing_test = next((t for t in test_results if t.get("status") != "PASSED"), None)
+    history_suffix = _history_note(mistake_history)
+    case_label = (failing_test.get("label") if failing_test else None) or "the first visible case"
 
     if ast_issues:
         first_issue = ast_issues[0]
@@ -192,14 +261,30 @@ def build_contextual_fallback(
         line = first_issue.get("line")
         return {
             "explanation": (
-                f"Before we even judge the answer for {title}, there is a code issue to fix first. "
-                f"{issue_summary}"
+                f"Before we even judge the answer for {title}, {symbol_ref} has a code issue to fix first. "
+                f"{issue_summary}{history_suffix}"
             ),
-            "hint_1": "Get the code into a runnable state first, then test again on the first visible example.",
+            "hint_1": f"Start at {f'line {line}' if line else 'the flagged block'} inside {symbol_ref} and get that section into a runnable state first.",
             "hint_2": (
-                f"Focus on{f' line {line}' if line else ' the location flagged by the analyzer'} and make sure that block does exactly what you intended before moving on."
+                f"Focus on{f' line {line}' if line else ' the location flagged by the analyzer'} and make sure that block does exactly what you intended before moving on to more examples."
             ),
             "hint_3": "Use the Show Solution button to compare your final approach with the reference solution.",
+        }
+
+    if dominant_failure == "COMPILE_ERROR" and failing_test:
+        compile_error = _specific_runtime_observation(
+            failing_test.get("error_summary") or failing_test.get("error_message", ""),
+            symbol,
+            language,
+        )
+        return {
+            "explanation": (
+                f"Your code for {title} is not compiling yet, so the judge never gets a chance to test the logic. "
+                f"The key issue is: {compile_error}{history_suffix}"
+            ),
+            "hint_1": f"Check the signature and return type of {symbol_ref} first, because that is the part the compiler is rejecting.",
+            "hint_2": f"Match the starter code contract exactly for {case_label}: parameter types, return type, and the shape of the final answer all need to line up.",
+            "hint_3": "Use the Show Solution button to compare your function signature and final return value with the reference solution.",
         }
 
     if dominant_failure == "WRONG_OUTPUT" and failing_test:
@@ -207,25 +292,29 @@ def build_contextual_fallback(
         actual = failing_test.get("actual_output") or "(no output)"
         return {
             "explanation": (
-                f"Your code runs to completion, but the logic is off for {title}. "
-                f"{_build_test_anchor(failing_test)}"
+                f"Your code runs to completion, but {symbol_ref} is building the wrong answer for {title}. "
+                f"{_build_test_anchor(failing_test)}{history_suffix}"
             ),
-            "hint_1": "Walk through that visible testcase step by step and note the moment your state stops matching the answer you expect.",
+            "hint_1": f"Replay {case_label} inside {symbol_ref} and watch the exact moment your state drifts from {expected} to {actual}.",
             "hint_2": (
-                f"Pay special attention to how you build the final result: it needs to match {expected} exactly, not just be close in spirit to {actual}."
+                f"Pay special attention to how you build the final result in {symbol_ref}: for this case the output must be {expected}, not {actual}. If the values are right but the order is wrong, inspect the moment you append or return them."
             ),
             "hint_3": "Use the Show Solution button to compare your algorithm with the reference solution.",
         }
 
     if dominant_failure == "RUNTIME_ERROR" and failing_test:
-        runtime_error = _clean_runtime_error(failing_test.get("error_message", ""))
+        runtime_error = _specific_runtime_observation(
+            failing_test.get("error_summary") or failing_test.get("error_message", ""),
+            symbol,
+            language,
+        )
         return {
             "explanation": (
                 f"Your code is crashing before it can finish {title}. "
-                f"The key error is: {runtime_error}."
+                f"The key error around {symbol_ref} is: {runtime_error}{history_suffix}"
             ),
-            "hint_1": "Start by checking the function signature and the type or number of values your code expects to receive.",
-            "hint_2": _runtime_hint_for_language(language),
+            "hint_1": f"Start with the definition of {symbol_ref} and compare it against the values coming from {case_label}.",
+            "hint_2": f"{_runtime_hint_for_language(language)} Then rerun the exact visible input that triggered the crash and confirm the function can accept those arguments.",
             "hint_3": "Use the Show Solution button to compare your function structure with the reference solution.",
         }
 
@@ -233,31 +322,31 @@ def build_contextual_fallback(
         return {
             "explanation": (
                 f"Your code is not finishing within the allowed time for {title}. "
-                "That usually means either one loop never converges or the approach is too slow for larger inputs."
+                f"That usually means either one loop inside {symbol_ref} never converges or the approach is too slow for larger inputs.{history_suffix}"
             ),
-            "hint_1": "Check whether every loop or recursion step clearly moves toward a stopping condition.",
-            "hint_2": "If the control flow looks correct, step back and ask whether this needs the intended DSA pattern instead of checking too many combinations.",
+            "hint_1": f"Check whether every loop or recursion step inside {symbol_ref} clearly moves toward a stopping condition.",
+            "hint_2": f"If the control flow looks correct, step back and ask whether {title} really wants the {pattern_name or 'intended DSA'} pattern instead of checking too many combinations.",
             "hint_3": "Use the Show Solution button to compare the expected time complexity with your approach.",
         }
 
     if dominant_failure == "EMPTY_OUTPUT" and failing_test:
         return {
             "explanation": (
-                f"Your code ran, but it did not produce the answer the evaluator is looking for in {title}. "
-                f"{_build_test_anchor(failing_test)}"
+                f"Your code ran, but {symbol_ref} did not produce the answer the evaluator is looking for in {title}. "
+                f"{_build_test_anchor(failing_test)}{history_suffix}"
             ),
-            "hint_1": "Make sure your function actually returns a value for the visible testcase.",
-            "hint_2": _runtime_hint_for_language(language),
+            "hint_1": f"Make sure {symbol_ref} actually returns a value for {case_label}, not just computes it internally.",
+            "hint_2": f"{_runtime_hint_for_language(language)} For this visible case, confirm the final return path is reached.",
             "hint_3": "Use the Show Solution button to compare your return path with the reference solution.",
         }
 
     return {
         "explanation": (
             f"Your submission for {title} still needs another pass. "
-            "Use the visible examples to verify both the exact return value and the overall approach."
+            f"Use the visible examples to verify both the exact return value and the overall approach in {symbol_ref}.{history_suffix}"
         ),
-        "hint_1": "Start with the first visible example and write down what the function should return before you run it.",
-        "hint_2": "Then compare that expected result with what your code is actually building step by step.",
+        "hint_1": f"Start with the first visible example and write down what {symbol_ref} should return before you run it.",
+        "hint_2": f"Then compare that expected result with what your code is actually building inside {symbol_ref}, one step at a time.",
         "hint_3": "Use the Show Solution button to compare against the reference implementation.",
     }
 
@@ -350,7 +439,7 @@ Output Instructions:
     # ── 3. Call LLM ───────────────────────────────────────────────
     if not gemini_model:
         logger.error("Gemini API key not configured.")
-        result_json = build_contextual_fallback(language, failure_report, ast_issues, problem_title)
+        result_json = build_contextual_fallback(code, language, failure_report, ast_issues, problem_title, pattern_name, mistakes_ctx)
         return {**result_json, "cached": False, "model": "fallback"}
         
     try:
@@ -372,9 +461,9 @@ Output Instructions:
         
     # ── 4. Parse & Validate JSON ──────────────────────────────────
     result_json = extract_json_with_fallback(response_text)
-    generic_fallback = result_json.get("explanation", "").startswith("We detected an issue")
+    generic_fallback = result_json.get("explanation", "").startswith("We detected an issue") or _is_generic_payload(result_json)
     if generic_fallback:
-        result_json = build_contextual_fallback(language, failure_report, ast_issues, problem_title)
+        result_json = build_contextual_fallback(code, language, failure_report, ast_issues, problem_title, pattern_name, mistakes_ctx)
     
     # Ensure keys exist
     for k in ["explanation", "hint_1", "hint_2", "hint_3"]:
