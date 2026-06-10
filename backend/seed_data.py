@@ -20,36 +20,55 @@ LANGUAGES = ("python", "javascript", "java", "cpp")
 
 
 PROBLEM_SIGNATURES = {
-    "two-sum": ("two_sum", ["nums", "target"], "list[int]"),
-    "best-time-to-buy-and-sell-stock": ("max_profit", ["prices"], "int"),
-    "move-zeroes": ("move_zeroes", ["nums"], "list[int]"),
-    "product-of-array-except-self": ("product_except_self", ["nums"], "list[int]"),
-    "valid-palindrome": ("is_palindrome", ["s"], "bool"),
-    "two-sum-ii-sorted": ("two_sum_sorted", ["numbers", "target"], "list[int]"),
-    "longest-substring-without-repeating": ("length_of_longest_substring", ["s"], "int"),
-    "maximum-average-subarray": ("find_max_average", ["nums", "k"], "float"),
-    "binary-search": ("search", ["nums", "target"], "int"),
-    "search-insert-position": ("search_insert", ["nums", "target"], "int"),
-    "reverse-string": ("reverse_string", ["s"], "str"),
-    "valid-anagram": ("is_anagram", ["s", "t"], "bool"),
-    "climbing-stairs": ("climb_stairs", ["n"], "int"),
-    "maximum-subarray": ("max_sub_array", ["nums"], "int"),
-    "container-with-most-water": ("max_area", ["height"], "int"),
+    "two-sum": {"function_name": "two_sum", "params": [("nums", "int_array"), ("target", "int")], "return_type": "int_array"},
+    "best-time-to-buy-and-sell-stock": {"function_name": "max_profit", "params": [("prices", "int_array")], "return_type": "int"},
+    "move-zeroes": {"function_name": "move_zeroes", "params": [("nums", "int_array")], "return_type": "int_array"},
+    "product-of-array-except-self": {"function_name": "product_except_self", "params": [("nums", "int_array")], "return_type": "int_array"},
+    "valid-palindrome": {"function_name": "is_palindrome", "params": [("s", "string")], "return_type": "bool"},
+    "two-sum-ii-sorted": {"function_name": "two_sum_sorted", "params": [("numbers", "int_array"), ("target", "int")], "return_type": "int_array"},
+    "longest-substring-without-repeating": {"function_name": "length_of_longest_substring", "params": [("s", "string")], "return_type": "int"},
+    "maximum-average-subarray": {"function_name": "find_max_average", "params": [("nums", "int_array"), ("k", "int")], "return_type": "float"},
+    "binary-search": {"function_name": "search", "params": [("nums", "int_array"), ("target", "int")], "return_type": "int"},
+    "search-insert-position": {"function_name": "search_insert", "params": [("nums", "int_array"), ("target", "int")], "return_type": "int"},
+    "reverse-string": {"function_name": "reverse_string", "params": [("s", "string")], "return_type": "string"},
+    "valid-anagram": {"function_name": "is_anagram", "params": [("s", "string"), ("t", "string")], "return_type": "bool"},
+    "climbing-stairs": {"function_name": "climb_stairs", "params": [("n", "int")], "return_type": "int"},
+    "maximum-subarray": {"function_name": "max_sub_array", "params": [("nums", "int_array")], "return_type": "int"},
+    "container-with-most-water": {"function_name": "max_area", "params": [("height", "int_array")], "return_type": "int"},
+}
+
+JAVA_TYPE_MAP = {
+    "int": "int",
+    "float": "double",
+    "bool": "boolean",
+    "string": "String",
+    "int_array": "int[]",
+}
+
+CPP_TYPE_MAP = {
+    "int": "int",
+    "float": "double",
+    "bool": "bool",
+    "string": "string",
+    "int_array": "vector<int>",
 }
 
 
 def leetcode_starter(problem_slug: str, language: str) -> str:
-    function_name, params, return_type = PROBLEM_SIGNATURES[problem_slug]
+    signature = PROBLEM_SIGNATURES[problem_slug]
+    function_name = signature["function_name"]
+    params = signature["params"]
+    return_type = signature["return_type"]
 
     if language == "python":
-        args = ", ".join(params)
+        args = ", ".join(name for name, _ in params)
         return f"""def {function_name}({args}):
     # Write your code here
     pass
 """
 
     if language == "javascript":
-        args = ", ".join(params)
+        args = ", ".join(name for name, _ in params)
         return f"""const fs = require('fs');
 const input = fs.readFileSync(0, 'utf8').split(/\\r?\\n/).filter(line => line.length > 0);
 
@@ -73,20 +92,59 @@ console.log(JSON.stringify(result));
 """
 
     if language == "java":
-        java_args = ", ".join(f"Object {param}" for param in params)
+        java_args = ", ".join(f"{JAVA_TYPE_MAP[param_type]} {param_name}" for param_name, param_type in params)
         java_call_args = ", ".join(
-            f"input.size() > {index} ? input.get({index}) : null"
-            for index, _ in enumerate(params)
+            _java_parse_expr(index, param_type)
+            for index, (_, param_type) in enumerate(params)
         )
+        java_return_type = JAVA_TYPE_MAP[return_type]
         return f"""import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Solution {{
-    public static Object {function_name}({java_args}) {{
+    private static int[] parseIntArray(String raw) {{
+        String cleaned = raw.trim();
+        if (cleaned.length() <= 2) return new int[0];
+        cleaned = cleaned.substring(1, cleaned.length() - 1);
+        String[] parts = cleaned.split(",");
+        int[] nums = new int[parts.length];
+        for (int i = 0; i < parts.length; i++) {{
+            nums[i] = Integer.parseInt(parts[i].trim());
+        }}
+        return nums;
+    }}
+
+    private static String parseString(String raw) {{
+        String cleaned = raw.trim();
+        if (cleaned.length() >= 2 && cleaned.startsWith("\"") && cleaned.endsWith("\"")) {{
+            return cleaned.substring(1, cleaned.length() - 1);
+        }}
+        return cleaned;
+    }}
+
+    private static boolean parseBool(String raw) {{
+        return raw.trim().equalsIgnoreCase("true");
+    }}
+
+    private static String formatIntArray(int[] nums) {{
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < nums.length; i++) {{
+            if (i > 0) sb.append(", ");
+            sb.append(nums[i]);
+        }}
+        sb.append("]");
+        return sb.toString();
+    }}
+
+    private static String formatResult({java_return_type} result) {{
+{_java_format_result(return_type)}
+    }}
+
+    public static {java_return_type} {function_name}({java_args}) {{
         // Write your code here
-        return null;
+{_java_default_return(return_type)}
     }}
 
     public static void main(String[] args) throws Exception {{
@@ -96,19 +154,64 @@ public class Solution {{
         while ((line = br.readLine()) != null) {{
             if (!line.isBlank()) input.add(line.trim());
         }}
-        Object result = {function_name}({java_call_args});
-        System.out.println(result);
+        {java_return_type} result = {function_name}({java_call_args});
+        System.out.println(formatResult(result));
     }}
 }}
 """
 
-    cpp_args = ", ".join(f"string {param}" for param in params)
+    cpp_args = ", ".join(f"{CPP_TYPE_MAP[param_type]} {param_name}" for param_name, param_type in params)
+    cpp_call_args = ", ".join(
+        _cpp_parse_expr(index, param_type)
+        for index, (_, param_type) in enumerate(params)
+    )
+    cpp_return_type = CPP_TYPE_MAP[return_type]
     return f"""#include <bits/stdc++.h>
 using namespace std;
 
-string {function_name}({cpp_args}) {{
+vector<int> parseIntVector(string raw) {{
+    vector<int> result;
+    raw.erase(remove_if(raw.begin(), raw.end(), ::isspace), raw.end());
+    if (raw.size() <= 2) return result;
+    raw = raw.substr(1, raw.size() - 2);
+    string token;
+    stringstream ss(raw);
+    while (getline(ss, token, ',')) {{
+        if (!token.empty()) result.push_back(stoi(token));
+    }}
+    return result;
+}}
+
+string parseString(string raw) {{
+    if (raw.size() >= 2 && raw.front() == '"' && raw.back() == '"') {{
+        return raw.substr(1, raw.size() - 2);
+    }}
+    return raw;
+}}
+
+bool parseBool(string raw) {{
+    transform(raw.begin(), raw.end(), raw.begin(), ::tolower);
+    return raw == "true";
+}}
+
+string formatIntVector(const vector<int>& nums) {{
+    stringstream out;
+    out << "[";
+    for (size_t i = 0; i < nums.size(); i++) {{
+        if (i > 0) out << ", ";
+        out << nums[i];
+    }}
+    out << "]";
+    return out.str();
+}}
+
+string formatResult({cpp_return_type} result) {{
+{_cpp_format_result(return_type)}
+}}
+
+{cpp_return_type} {function_name}({cpp_args}) {{
     // Write your code here
-    return "";
+{_cpp_default_return(return_type)}
 }}
 
 int main() {{
@@ -118,11 +221,81 @@ int main() {{
         if (!line.empty()) input.push_back(line);
     }}
 
-    string result = {function_name}({", ".join(f"input.size() > {index} ? input[{index}] : string()" for index, _ in enumerate(params))});
-    cout << result << endl;
+    {cpp_return_type} result = {function_name}({cpp_call_args});
+    cout << formatResult(result) << endl;
     return 0;
 }}
 """
+
+
+def _java_parse_expr(index: int, param_type: str) -> str:
+    raw = f'input.size() > {index} ? input.get({index}) : ""'
+    if param_type == "int":
+        return f"Integer.parseInt({raw}.trim())"
+    if param_type == "float":
+        return f"Double.parseDouble({raw}.trim())"
+    if param_type == "bool":
+        return f"parseBool({raw})"
+    if param_type == "int_array":
+        return f"parseIntArray({raw})"
+    return f"parseString({raw})"
+
+
+def _java_default_return(return_type: str) -> str:
+    defaults = {
+        "int": "        return 0;",
+        "float": "        return 0.0;",
+        "bool": "        return false;",
+        "string": '        return "";',
+        "int_array": "        return new int[0];",
+    }
+    return defaults[return_type]
+
+
+def _java_format_result(return_type: str) -> str:
+    formatters = {
+        "int": "        return String.valueOf(result);",
+        "float": "        return String.valueOf(result);",
+        "bool": '        return result ? "true" : "false";',
+        "string": "        return result;",
+        "int_array": "        return formatIntArray(result);",
+    }
+    return formatters[return_type]
+
+
+def _cpp_parse_expr(index: int, param_type: str) -> str:
+    raw = f'(input.size() > {index} ? input[{index}] : string())'
+    if param_type == "int":
+        return f"stoi({raw})"
+    if param_type == "float":
+        return f"stod({raw})"
+    if param_type == "bool":
+        return f"parseBool({raw})"
+    if param_type == "int_array":
+        return f"parseIntVector({raw})"
+    return f"parseString({raw})"
+
+
+def _cpp_default_return(return_type: str) -> str:
+    defaults = {
+        "int": "    return 0;",
+        "float": "    return 0.0;",
+        "bool": "    return false;",
+        "string": '    return "";',
+        "int_array": "    return {};",
+    }
+    return defaults[return_type]
+
+
+def _cpp_format_result(return_type: str) -> str:
+    formatters = {
+        "int": "    return to_string(result);",
+        "float": '    ostringstream out; out << result; return out.str();',
+        "bool": '    return result ? "true" : "false";',
+        "string": "    return result;",
+        "int_array": "    return formatIntVector(result);",
+    }
+    return formatters[return_type]
 
 
 def leetcode_starters(problem_slug: str) -> Dict[str, str]:

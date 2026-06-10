@@ -1,3 +1,5 @@
+import { getReadableErrorText } from '../utils/errors'
+
 export function TestCasesTab({
   problem,
   analysisResult,
@@ -89,13 +91,13 @@ export function TestCasesTab({
                 {practice && (
                   <div className="case-field">
                     <div className="case-label">Actual</div>
-                    <pre>{practice.actual}</pre>
+                    <pre>{practice.passed ? practice.actual : getReadableErrorText(practice.errorSummary || practice.actual, practice.actual)}</pre>
                   </div>
                 )}
                 {practice && (
                   <div className="case-field">
                     <div className="case-label">Status</div>
-                    <pre>{practice.passed ? 'Passed' : (practice.status || 'Failed')}</pre>
+                    <pre>{practice.passed ? 'Passed' : (practice.status || 'Failed').replaceAll('_', ' ')}</pre>
                   </div>
                 )}
               </button>
@@ -207,7 +209,7 @@ export function TestCasesTab({
                       Exp: {testCase.expected}
                     </div>
                     <div style={{ marginTop: 4 }}>
-                      Act: {testCase.actual}
+                      Act: {testCase.passed ? testCase.actual : getReadableErrorText(testCase.errorSummary || testCase.actual, testCase.actual)}
                     </div>
                   </>
                 )}

@@ -1,3 +1,5 @@
+import { getErrorHeadline, getReadableErrorText } from '../utils/errors'
+
 const FILE_LABELS = {
   python: 'python solution.py',
   javascript: 'node solution.js',
@@ -32,7 +34,9 @@ export function OutputTab({ runResult, isRunning, language = 'python' }) {
     ? (runResult.success
         ? `Visible tests passed (${runResult.passedTests}/${runResult.totalTests})`
         : `Visible tests failed (${runResult.failedTests}/${runResult.totalTests})`)
-    : (runResult.success ? 'Ran successfully' : 'Runtime Error')
+    : (runResult.success ? 'Ran successfully' : getErrorHeadline(runResult))
+
+  const shortError = getReadableErrorText(runResult.errorSummary || runResult.output, runResult.output)
 
   return (
     <div className="fade-in">
@@ -53,7 +57,16 @@ export function OutputTab({ runResult, isRunning, language = 'python' }) {
             </>
           ) : (
             <>
-              <span className="error-text">{runResult.output}</span>
+              <span className="error-text">{shortError}</span>
+              {runResult.errorSummary && runResult.output && runResult.errorSummary !== runResult.output && (
+                <>
+                  {'\n'}
+                  {'\n'}
+                  <span className="muted">Details:</span>
+                  {'\n'}
+                  <span className="muted">{runResult.output}</span>
+                </>
+              )}
               {'\n'}
               <span className="muted">Execution time: {runResult.execTime || '-'}</span>
             </>
@@ -69,7 +82,7 @@ export function OutputTab({ runResult, isRunning, language = 'python' }) {
           </div>
           {!runResult.success && (
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginTop: 2 }}>
-              {(runResult.output || '').split('\n')[0]}
+              {shortError}
             </div>
           )}
         </div>

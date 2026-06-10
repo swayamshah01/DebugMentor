@@ -2,8 +2,8 @@
 failure_detector.py — Failure Classification Engine (Phase 2)
 
 Processes raw execution results from the executor and classifies each
-test run into one of 5 states:
-  TIMEOUT, RUNTIME_ERROR, EMPTY_OUTPUT, WRONG_OUTPUT, PASSED
+test run into one of 6 states:
+  TIMEOUT, COMPILE_ERROR, RUNTIME_ERROR, EMPTY_OUTPUT, WRONG_OUTPUT, PASSED
 
 Produces a structured FailureReport JSON for the /submit response.
 """
@@ -25,7 +25,7 @@ RUNTIME_ERROR_PATTERNS = [
 def _classify_single(result: Dict[str, Any]) -> str:
     """
     Classify a single executor result into one of:
-    TIMEOUT, RUNTIME_ERROR, EMPTY_OUTPUT, PASSED.
+    TIMEOUT, COMPILE_ERROR, RUNTIME_ERROR, EMPTY_OUTPUT, PASSED.
     (WRONG_OUTPUT requires expected output, reserved for Phase 3.)
     """
     # 1. Timeout
@@ -35,6 +35,10 @@ def _classify_single(result: Dict[str, Any]) -> str:
     stderr = result.get("error_message", "") or ""
     stdout = result.get("actual_output", "") or ""
     exit_code = result.get("exit_code", -1)
+    stage = result.get("stage", "run")
+
+    if stage == "compile" and exit_code != 0:
+        return "COMPILE_ERROR"
 
     # 2. Runtime error (non-zero exit code or known error in stderr)
     if exit_code != 0:

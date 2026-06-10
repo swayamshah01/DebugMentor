@@ -157,6 +157,7 @@ def get_problem_detail(problem_id: int, db: Session = Depends(get_db)) -> dict:
         "title": problem.title,
         "slug": problem.slug,
         "difficulty": problem.difficulty,
+        "short_description": problem.short_description,
         "pattern": {
             "id": problem.pattern.id,
             "name": problem.pattern.name,

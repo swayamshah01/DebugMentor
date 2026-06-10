@@ -12,6 +12,7 @@ export default function OutputPanel({
   runResult,
   language,
   revealHint,
+  onGenerateHints,
   selectedVisibleTestCaseId,
   onSelectVisibleTestCase,
 }) {
@@ -50,6 +51,7 @@ export default function OutputPanel({
             analysisResult={analysisResult}
             isAnalyzing={isAnalyzing}
             revealHint={revealHint}
+            onGenerateHints={onGenerateHints}
           />
         )}
         {activeTab === 'tests' && (

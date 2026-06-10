@@ -294,6 +294,7 @@ export default function App() {
           onRun={handleRun}
           onSubmit={handleSubmit}
           revealHint={revealHint}
+          onGenerateHints={handleSubmit}
           selectedVisibleTestCaseId={selectedVisibleTestCaseId}
           onSelectVisibleTestCase={handleSelectVisibleTestCase}
           loading={problemLoading}

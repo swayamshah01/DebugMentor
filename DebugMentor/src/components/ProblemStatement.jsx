@@ -1,4 +1,8 @@
 export default function ProblemStatement({ problem, loading }) {
+  const constraintItems = problem?.constraints
+    ? String(problem.constraints).split(',').map((item) => item.trim()).filter(Boolean)
+    : []
+
   if (loading) {
     return (
       <section className="problem-statement-panel">
@@ -24,16 +28,28 @@ export default function ProblemStatement({ problem, loading }) {
         <div>
           <div className="problem-kicker">{problem.pattern?.name || 'Pattern'}</div>
           <h2>{problem.title}</h2>
+          {problem.short_description && (
+            <p className="problem-subtitle" style={{ marginTop: 8 }}>
+              {problem.short_description}
+            </p>
+          )}
         </div>
         <span className={`difficulty difficulty-${problem.difficulty}`}>{problem.difficulty}</span>
       </div>
 
-      <p className="problem-text">{problem.statement}</p>
+      <div className="info-block">
+        <div className="info-label">Problem</div>
+        <p className="problem-text" style={{ marginBottom: 0 }}>{problem.statement}</p>
+      </div>
 
-      {problem.constraints && (
+      {constraintItems.length > 0 && (
         <div className="info-block">
           <div className="info-label">Constraints</div>
-          <div className="info-text">{problem.constraints}</div>
+          <ul className="info-text" style={{ paddingLeft: 18 }}>
+            {constraintItems.map((item, index) => (
+              <li key={`${item}-${index}`} style={{ marginBottom: 6 }}>{item}</li>
+            ))}
+          </ul>
         </div>
       )}
 

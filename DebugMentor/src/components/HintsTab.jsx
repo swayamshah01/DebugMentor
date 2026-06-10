@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import HintCard from './HintCard'
 import SolutionModal from './SolutionModal'
 
-export function HintsTab({ analysisResult, isAnalyzing, revealHint }) {
+export function HintsTab({ analysisResult, isAnalyzing, revealHint, onGenerateHints }) {
   const [revealedLevel, setRevealedLevel] = useState(1)
   const [isRevealing, setIsRevealing] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -27,8 +27,13 @@ export function HintsTab({ analysisResult, isAnalyzing, revealHint }) {
   if (!analysisResult) {
     return (
       <div className="empty-state compact">
-        <div className="empty-title">No hints yet</div>
-        <div className="empty-desc">Submit your code to generate feedback and progressive hints.</div>
+        <div className="empty-title">No hints generated yet</div>
+        <div className="empty-desc">Hints are created after you click Submit. Run checks visible tests, while Submit unlocks feedback and progressive guidance.</div>
+        {onGenerateHints && (
+          <button type="button" className="btn-next-hint" onClick={onGenerateHints}>
+            Submit to Generate Hints
+          </button>
+        )}
       </div>
     )
   }
@@ -88,6 +93,20 @@ export function HintsTab({ analysisResult, isAnalyzing, revealHint }) {
         <p className="analysis-summary-text">
           {normHints.explanation || bugSummary || 'Your submission did not pass all checks.'}
         </p>
+      </div>
+
+      <div
+        style={{
+          padding: '10px 14px',
+          borderRadius: 8,
+          border: '1px solid rgba(59, 130, 246, 0.18)',
+          background: 'rgba(59, 130, 246, 0.06)',
+          color: 'var(--text-secondary)',
+          fontSize: 13,
+          lineHeight: 1.6,
+        }}
+      >
+        Start with Hint 1, then use <strong style={{ color: 'var(--text-primary)' }}>Get Next Hint</strong> if you still want help. The final step unlocks the reference solution.
       </div>
 
       <HintCard

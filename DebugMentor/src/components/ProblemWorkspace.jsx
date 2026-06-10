@@ -16,6 +16,7 @@ export default function ProblemWorkspace({
   onRun,
   onSubmit,
   revealHint,
+  onGenerateHints,
   selectedVisibleTestCaseId,
   onSelectVisibleTestCase,
   loading = false,
@@ -52,6 +53,7 @@ export default function ProblemWorkspace({
             runResult={runResult}
             language={language}
             revealHint={revealHint}
+            onGenerateHints={onGenerateHints}
             selectedVisibleTestCaseId={selectedVisibleTestCaseId}
             onSelectVisibleTestCase={onSelectVisibleTestCase}
           />

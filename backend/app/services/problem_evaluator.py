@@ -103,9 +103,11 @@ def evaluate_problem_submission(
             "expected_output": test_case.expected_output,
             "actual_output": exec_result.get("actual_output", "").strip(),
             "error_message": exec_result.get("error_message", ""),
+            "error_summary": exec_result.get("error_summary", ""),
             "exit_code": exec_result.get("exit_code", -1),
             "timed_out": exec_result.get("timed_out", False),
             "execution_time_ms": exec_result.get("execution_time_ms", 0),
+            "stage": exec_result.get("stage", "run"),
             "is_hidden": test_case.is_hidden,
             "order_index": test_case.order_index,
         })

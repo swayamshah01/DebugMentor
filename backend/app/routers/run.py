@@ -44,6 +44,8 @@ class RunResponse(BaseModel):
     output: str
     exec_time: str
     language: str
+    error_summary: str | None = None
+    error_stage: str | None = None
     total_tests: int = 0
     passed_tests: int = 0
     failed_tests: int = 0
@@ -116,7 +118,7 @@ def run_code(
             output = f"Passed all visible tests ({passed}/{total})."
         elif first_failure:
             expected = first_failure.get("expected_output", "?")
-            actual = first_failure.get("actual_output") or first_failure.get("error_message") or "(no output)"
+            actual = first_failure.get("actual_output") or first_failure.get("error_summary") or first_failure.get("error_message") or "(no output)"
             label = first_failure.get("label") or "Visible test"
             output = (
                 f"{label} failed. Expected {expected}, got {actual}. "
@@ -130,6 +132,8 @@ def run_code(
             output=output,
             exec_time=f"{average_ms / 1000:.3f}s",
             language=lang,
+            error_summary=first_failure.get("error_summary") if first_failure else None,
+            error_stage=first_failure.get("stage") if first_failure else None,
             total_tests=total,
             passed_tests=passed,
             failed_tests=failed,
@@ -156,7 +160,7 @@ def run_code(
         if result.get("timed_out"):
             output = result.get("error_message") or "Execution timed out."
         elif not success:
-            output = result.get("error_message") or "Process exited with a non-zero status."
+            output = result.get("error_summary") or result.get("error_message") or "Process exited with a non-zero status."
         else:
             output = result.get("actual_output") or "(program produced no output)"
 
@@ -167,6 +171,8 @@ def run_code(
             output=output,
             exec_time=elapsed,
             language=lang,
+            error_summary=result.get("error_summary"),
+            error_stage=result.get("stage"),
             total_tests=1,
             passed_tests=1 if success else 0,
             failed_tests=0 if success else 1,
