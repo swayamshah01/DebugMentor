@@ -65,8 +65,6 @@ def submit_solution(
         language=payload.language,
         status="passed" if report["success"] else "failed",
         hint_level=0,
-        feedback=None,
-        ast_findings=None,
         test_results=report,
         hints=None,
     )

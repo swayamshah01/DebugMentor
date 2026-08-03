@@ -26,6 +26,7 @@ class Settings:
 
         self.SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
         self.DEBUG = _as_bool("DEBUG", False)
+        self.SQL_ECHO = _as_bool("SQL_ECHO", False)
         self.AUTO_SEED_CURATED_CONTENT = _as_bool("AUTO_SEED_CURATED_CONTENT", True)
         self.CORS_ORIGINS = _as_list("CORS_ORIGINS", "*")
 

@@ -57,4 +57,3 @@ class UserResponse(BaseModel):
     username:     str
     email:        str
     created_at:   datetime
-    error_pattern: Optional[str] = None   # Phase 2: populated by learning-profile service

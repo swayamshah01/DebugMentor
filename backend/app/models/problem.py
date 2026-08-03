@@ -22,7 +22,6 @@ class Problem(Base):
     constraints_text = Column(Text, nullable=True)
     examples_json = Column(JSON, nullable=True)
     starter_code_json = Column(JSON, nullable=True)
-    reference_solution_json = Column(JSON, nullable=True)
     order_index = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

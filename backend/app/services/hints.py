@@ -114,7 +114,13 @@ Difficulty: {problem.difficulty}
 Problem statement:
 {problem.statement}
 
-Input and constraints:
+Input format:
+{problem.input_format or 'Read the values described in the statement from standard input.'}
+
+Output format:
+{problem.output_format or 'Print only the requested answer to standard output.'}
+
+Constraints:
 {problem.constraints_text or 'No extra constraints provided.'}
 
 Visible examples:

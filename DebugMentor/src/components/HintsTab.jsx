@@ -1,144 +1,66 @@
-import { useEffect, useState } from 'react'
-import HintCard from './HintCard'
-import SolutionModal from './SolutionModal'
-
-export function HintsTab({ analysisResult, isAnalyzing, revealHint, onGenerateHints }) {
-  const [revealedLevel, setRevealedLevel] = useState(1)
-  const [isRevealing, setIsRevealing] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-
-  useEffect(() => {
-    if (analysisResult?.submissionId) {
-      setRevealedLevel(1)
-      setShowModal(false)
-    }
-  }, [analysisResult?.submissionId])
-
-  if (isAnalyzing) {
+export default function HintsTab({ submission, hints, busy, error, onRequestHint }) {
+  if (!submission) {
     return (
-      <div className="fade-in">
-        <div className="skeleton" style={{ height: 80, marginBottom: 12 }} />
-        <div className="skeleton" style={{ height: 100, marginBottom: 10 }} />
-        <div className="skeleton" style={{ height: 100, marginBottom: 10, opacity: 0.6 }} />
+      <div className="panel-empty">
+        <strong>No submission selected</strong>
+        <span>Submit a solution before requesting personalized guidance.</span>
       </div>
     )
   }
 
-  if (!analysisResult) {
+  if (submission.success) {
     return (
-      <div className="empty-state compact">
-        <div className="empty-title">No hints generated yet</div>
-        <div className="empty-desc">Hints are created after you click Submit. Run checks visible tests, while Submit unlocks feedback and progressive guidance.</div>
-        {onGenerateHints && (
-          <button type="button" className="btn-next-hint" onClick={onGenerateHints}>
-            Submit to Generate Hints
-          </button>
-        )}
+      <div className="panel-empty success-empty">
+        <strong>No hint needed</strong>
+        <span>This submission passed every official test.</span>
       </div>
     )
   }
 
-  const { hints, status, bugSummary } = analysisResult
-  const isClean = status === 'clean'
-
-  const normHints = Array.isArray(hints)
-    ? {
-        explanation: bugSummary || 'Review the failed cases and compare your output with the expected result.',
-        hint_1: hints[0]?.text || '',
-        hint_2: hints[1]?.text || '',
-        hint_3: hints[2]?.text || '',
-      }
-    : (hints || {})
-
-  const solutionText = normHints.solution_code || normHints.hint_3 || 'No reference solution is available for this submission.'
-
-  if (isClean) {
-    return (
-      <div className="fade-in">
-        <div className="analysis-summary-card success">
-          <div className="analysis-summary-label">Feedback</div>
-          <p className="analysis-summary-text">
-            <span className="highlight green">All checks passed.</span> Your current solution matches the official tests.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  const handleReveal = async () => {
-    if (revealedLevel >= 3) return
-    if (revealedLevel === 2) {
-      setShowModal(true)
-      return
-    }
-
-    setIsRevealing(true)
-    await revealHint(analysisResult.submissionId, null)
-    setRevealedLevel(2)
-    setIsRevealing(false)
-  }
-
-  const confirmSolution = async () => {
-    setIsRevealing(true)
-    setShowModal(false)
-    await revealHint(analysisResult.submissionId, null)
-    setRevealedLevel(3)
-    setIsRevealing(false)
-  }
+  const highestLevel = hints.reduce((highest, hint) => Math.max(highest, hint.level), 0)
+  const nextLabel = highestLevel === 0 ? 'Get hint 1' : highestLevel === 1 ? 'Get hint 2' : 'Reveal solution'
 
   return (
-    <div className="fade-in hints-layout">
-      <div className="analysis-summary-card">
-        <div className="analysis-summary-label">What to focus on</div>
-        <p className="analysis-summary-text">
-          {normHints.explanation || bugSummary || 'Your submission did not pass all checks.'}
-        </p>
-      </div>
+    <div className="hints-view">
+      <header className="hints-header">
+        <div>
+          <strong>Personalized guidance</strong>
+          <p>Hints are generated from this submission and its test results.</p>
+        </div>
+        {submission.hintsAvailable && highestLevel < 3 && (
+          <button className="button button-primary" disabled={busy} type="button" onClick={onRequestHint}>
+            {busy ? 'Generating' : nextLabel}
+          </button>
+        )}
+      </header>
 
-      <div
-        style={{
-          padding: '10px 14px',
-          borderRadius: 8,
-          border: '1px solid rgba(59, 130, 246, 0.18)',
-          background: 'rgba(59, 130, 246, 0.06)',
-          color: 'var(--text-secondary)',
-          fontSize: 13,
-          lineHeight: 1.6,
-        }}
-      >
-        Start with Hint 1, then use <strong style={{ color: 'var(--text-primary)' }}>Get Next Hint</strong> if you still want help. The final step unlocks the reference solution.
-      </div>
+      {!submission.hintsAvailable && (
+        <div className="panel-message">
+          AI hints are not configured on the backend. Add a Gemini API key to enable them.
+        </div>
+      )}
+      {error && <div className="panel-message panel-message-error">{error}</div>}
 
-      <HintCard
-        hint={{ level: 1, title: 'Where to look first', text: normHints.hint_1 }}
-        revealed={revealedLevel >= 1}
-      />
-      <HintCard
-        hint={{ level: 2, title: 'What to check next', text: normHints.hint_2 }}
-        revealed={revealedLevel >= 2}
-      />
-      <HintCard
-        hint={{ level: 3, title: 'Reference Solution', text: solutionText }}
-        revealed={revealedLevel >= 3}
-      />
-
-      {revealedLevel < 3 && (
-        <button
-          type="button"
-          onClick={handleReveal}
-          disabled={isRevealing}
-          className="btn-next-hint"
-        >
-          {isRevealing ? 'Loading...' : (revealedLevel === 2 ? 'Show Solution' : 'Get Next Hint')}
-        </button>
+      {hints.length === 0 && submission.hintsAvailable && !error && (
+        <div className="hint-ready-state">
+          <span>Level 1</span>
+          <strong>Start with a focused nudge</strong>
+        </div>
       )}
 
-      {showModal && (
-        <SolutionModal
-          onCancel={() => setShowModal(false)}
-          onReveal={confirmSolution}
-        />
-      )}
+      <div className="hint-list">
+        {hints.map((hint) => (
+          <article className={`hint-item ${hint.isSolution ? 'solution-hint' : ''}`} key={hint.level}>
+            <header>
+              <span>{hint.isSolution ? 'Solution' : `Hint ${hint.level}`}</span>
+              <small>{hint.focus}</small>
+            </header>
+            <h3>{hint.title}</h3>
+            <p>{hint.content}</p>
+            {hint.solutionCode && <pre className="solution-code"><code>{hint.solutionCode}</code></pre>}
+          </article>
+        ))}
+      </div>
     </div>
   )
 }

@@ -2,62 +2,62 @@ import CodeEditorPanel from './CodeEditorPanel'
 import OutputPanel from './OutputPanel'
 import ProblemStatement from './ProblemStatement'
 
+
 export default function ProblemWorkspace({
   problem,
+  loading,
   code,
   language,
-  activeTab,
-  setActiveTab,
-  isAnalyzing,
-  isRunning,
-  runResult,
-  analysisResult,
+  selectedTestCase,
+  selectedTestCaseId,
+  activePanel,
+  busyAction,
+  gradeResult,
+  submissionResult,
+  hints,
+  requestError,
+  hintError,
   onCodeChange,
   onRun,
   onSubmit,
-  revealHint,
-  onGenerateHints,
-  selectedVisibleTestCaseId,
-  onSelectVisibleTestCase,
-  loading = false,
+  onPanelChange,
+  onSelectTestCase,
+  onRequestHint,
 }) {
-  return (
-    <main className="problem-workspace-shell">
-      <div className="problem-workspace-grid">
-        <ProblemStatement
-          problem={problem}
-          loading={loading}
-          selectedVisibleTestCaseId={selectedVisibleTestCaseId}
-          onSelectVisibleTestCase={onSelectVisibleTestCase}
-        />
+  const selectedCaseNumber = Math.max(
+    1,
+    (problem?.test_cases || []).findIndex((item) => item.id === selectedTestCase?.id) + 1,
+  )
 
-        <section className="workspace-editor-stack">
+  return (
+    <main className="workspace-page">
+      <div className="workspace-grid">
+        <ProblemStatement problem={problem} loading={loading} />
+        <div className="workspace-right">
           <CodeEditorPanel
             code={code}
             language={language}
-            isAnalyzing={isAnalyzing}
-            isRunning={isRunning}
+            selectedCaseNumber={selectedCaseNumber}
+            busyAction={busyAction}
             onCodeChange={onCodeChange}
             onRun={onRun}
             onSubmit={onSubmit}
-            analysisResult={analysisResult}
           />
-
           <OutputPanel
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            activePanel={activePanel}
             problem={problem}
-            analysisResult={analysisResult}
-            isAnalyzing={isAnalyzing}
-            isRunning={isRunning}
-            runResult={runResult}
-            language={language}
-            revealHint={revealHint}
-            onGenerateHints={onGenerateHints}
-            selectedVisibleTestCaseId={selectedVisibleTestCaseId}
-            onSelectVisibleTestCase={onSelectVisibleTestCase}
+            selectedTestCaseId={selectedTestCaseId}
+            gradeResult={gradeResult}
+            submissionResult={submissionResult}
+            hints={hints}
+            busyAction={busyAction}
+            requestError={requestError}
+            hintError={hintError}
+            onPanelChange={onPanelChange}
+            onSelectTestCase={onSelectTestCase}
+            onRequestHint={onRequestHint}
           />
-        </section>
+        </div>
       </div>
     </main>
   )

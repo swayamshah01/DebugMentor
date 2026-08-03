@@ -1,71 +1,80 @@
+function MathText({ children }) {
+  const parts = String(children || '').split(/(\^-?\d+)/g)
+  return parts.map((part, index) => (
+    /^\^-?\d+$/.test(part)
+      ? <sup key={`${part}-${index}`}>{part.slice(1)}</sup>
+      : <span key={`${part}-${index}`}>{part}</span>
+  ))
+}
+
+
 export default function ProblemStatement({ problem, loading }) {
-  const constraintItems = problem?.constraints
-    ? String(problem.constraints).split(',').map((item) => item.trim()).filter(Boolean)
-    : []
-
-  if (loading) {
-    return (
-      <section className="problem-statement-panel">
-        <div className="skeleton" style={{ height: 24, width: '55%', marginBottom: 12 }} />
-        <div className="skeleton" style={{ height: 120, marginBottom: 12 }} />
-        <div className="skeleton" style={{ height: 160 }} />
-      </section>
-    )
+  if (loading || !problem) {
+    return <aside className="problem-pane"><div className="page-state">Loading problem...</div></aside>
   }
 
-  if (!problem) {
-    return (
-      <section className="problem-statement-panel empty-state-panel">
-        <div className="empty-title">Select a problem</div>
-        <div className="empty-desc">Choose a curated question from a pattern to open the practice workspace.</div>
-      </section>
-    )
-  }
+  const constraints = String(problem.constraints || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
 
   return (
-    <section className="problem-statement-panel">
-      <div className="problem-header">
-        <div>
-          <div className="problem-kicker">{problem.pattern?.name || 'Pattern'}</div>
-          <h2>{problem.title}</h2>
-          {problem.short_description && (
-            <p className="problem-subtitle" style={{ marginTop: 8 }}>
-              {problem.short_description}
-            </p>
-          )}
-        </div>
-        <span className={`difficulty difficulty-${problem.difficulty}`}>{problem.difficulty}</span>
-      </div>
+    <aside className="problem-pane">
+      <article className="problem-content">
+        <header className="problem-heading">
+          <div className="problem-meta">
+            <span>{problem.pattern?.name}</span>
+            <span className={`difficulty difficulty-${problem.difficulty}`}>{problem.difficulty}</span>
+          </div>
+          <h1>{problem.title}</h1>
+          {problem.short_description && <p className="problem-summary">{problem.short_description}</p>}
+        </header>
 
-      <div className="info-block">
-        <div className="info-label">Problem</div>
-        <p className="problem-text" style={{ marginBottom: 0 }}>{problem.statement}</p>
-      </div>
+        <section className="statement-section">
+          <h2>Problem</h2>
+          <p>{problem.statement}</p>
+        </section>
 
-      {constraintItems.length > 0 && (
-        <div className="info-block">
-          <div className="info-label">Constraints</div>
-          <ul className="info-text" style={{ paddingLeft: 18 }}>
-            {constraintItems.map((item, index) => (
-              <li key={`${item}-${index}`} style={{ marginBottom: 6 }}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        <section className="statement-section format-section">
+          <div>
+            <h2>Input format</h2>
+            <pre>{problem.input_format || 'Read the values from standard input.'}</pre>
+          </div>
+          <div>
+            <h2>Output format</h2>
+            <pre>{problem.output_format || 'Print the required answer.'}</pre>
+          </div>
+        </section>
 
-      {Array.isArray(problem.examples) && problem.examples.length > 0 && (
-        <div className="examples-block">
-          <div className="info-label">Examples</div>
-          {problem.examples.map((example, index) => (
-            <div key={index} className="example-card">
-              <div><strong>Input:</strong> {example.input}</div>
-              <div><strong>Output:</strong> {example.output}</div>
-              {example.explanation && <div><strong>Why:</strong> {example.explanation}</div>}
+        {constraints.length > 0 && (
+          <section className="statement-section">
+            <h2>Constraints</h2>
+            <ul className="constraint-list">
+              {constraints.map((constraint, index) => (
+                <li key={`${constraint}-${index}`}><MathText>{constraint}</MathText></li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {problem.examples?.length > 0 && (
+          <section className="statement-section">
+            <h2>Examples</h2>
+            <div className="example-list">
+              {problem.examples.map((example, index) => (
+                <div className="example-block" key={`${example.input}-${index}`}>
+                  <strong>Example {index + 1}</strong>
+                  <dl>
+                    <dt>Input</dt><dd><pre>{example.input}</pre></dd>
+                    <dt>Output</dt><dd><pre>{example.output}</pre></dd>
+                  </dl>
+                  {example.explanation && <p>{example.explanation}</p>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-
-    </section>
+          </section>
+        )}
+      </article>
+    </aside>
   )
 }

@@ -1,168 +1,79 @@
-import { useRef, useState, useCallback } from 'react'
-import MonacoEditor from '@monaco-editor/react'
+import Editor from '@monaco-editor/react'
+
+import { useTheme } from '../context/useTheme'
 import { languageConfig } from '../data/languages'
-import { useTheme } from '../context/ThemeContext'
 
-const MONACO_DARK = {
-  base: 'vs-dark',
-  inherit: true,
-  rules: [
-    { token: 'comment', foreground: '6B7280', fontStyle: 'italic' },
-    { token: 'keyword', foreground: '93C5FD', fontStyle: 'bold' },
-    { token: 'string', foreground: 'A7F3D0' },
-    { token: 'number', foreground: 'FCD34D' },
-    { token: 'function', foreground: 'C4B5FD' },
-  ],
-  colors: {
-    'editor.background': '#111827',
-    'editor.foreground': '#F3F4F6',
-    'editor.lineHighlightBackground': '#1F2937',
-    'editor.selectionBackground': '#2563EB33',
-    'editorLineNumber.foreground': '#6B7280',
-    'editorLineNumber.activeForeground': '#CBD5E1',
-    'editorCursor.foreground': '#60A5FA',
-  },
+
+const FILE_NAMES = {
+  python: 'main.py',
+  javascript: 'main.js',
+  java: 'Main.java',
+  cpp: 'main.cpp',
 }
 
-const MONACO_LIGHT = {
-  base: 'vs',
-  inherit: true,
-  rules: [
-    { token: 'comment', foreground: '94A3B8', fontStyle: 'italic' },
-    { token: 'keyword', foreground: '2563EB', fontStyle: 'bold' },
-    { token: 'string', foreground: '047857' },
-    { token: 'number', foreground: 'B45309' },
-    { token: 'function', foreground: '7C3AED' },
-  ],
-  colors: {
-    'editor.background': '#FFFFFF',
-    'editor.foreground': '#111827',
-    'editor.lineHighlightBackground': '#F8FAFC',
-    'editor.selectionBackground': '#2563EB22',
-    'editorLineNumber.foreground': '#94A3B8',
-    'editorLineNumber.activeForeground': '#475569',
-    'editorCursor.foreground': '#2563EB',
-  },
-}
-
-const fileNames = {
-  python: 'solution.py',
-  cpp: 'solution.cpp',
-  java: 'Solution.java',
-  javascript: 'solution.js',
-}
 
 export default function CodeEditorPanel({
   code,
   language,
-  isAnalyzing,
-  isRunning,
+  selectedCaseNumber,
+  busyAction,
   onCodeChange,
   onRun,
   onSubmit,
-  analysisResult,
 }) {
-  const editorRef = useRef(null)
-  const [lineCol, setLineCol] = useState({ line: 1, col: 1 })
   const { theme } = useTheme()
-  const cfg = languageConfig[language]
-  const fileName = fileNames[language] || 'solution.py'
-  const monacoTheme = theme === 'light' ? 'debugmentor-light' : 'debugmentor-dark'
-  const hasCode = Boolean(code?.trim())
-
-  const handleEditorMount = useCallback((editor, monaco) => {
-    editorRef.current = editor
-
-    monaco.editor.defineTheme('debugmentor-dark', MONACO_DARK)
-    monaco.editor.defineTheme('debugmentor-light', MONACO_LIGHT)
-    monaco.editor.setTheme(monacoTheme)
-
-    editor.onDidChangeCursorPosition((event) => {
-      setLineCol({ line: event.position.lineNumber, col: event.position.column })
-    })
-  }, [monacoTheme])
-
-  const issueCount = analysisResult?.astIssues?.length || 0
-  const failureCount = analysisResult?.failedCount || 0
-  const statusLabel = analysisResult
-    ? (analysisResult.status === 'clean' ? 'Ready' : `${issueCount + failureCount} issue${issueCount + failureCount === 1 ? '' : 's'}`)
-    : 'Practice'
+  const config = languageConfig[language] || languageConfig.python
+  const disabled = !code.trim() || Boolean(busyAction)
 
   return (
-    <div className="editor-panel" style={{ width: '100%' }}>
-      <div className="file-tabbar">
-        <div className="file-tab active static-file-tab">
-          <span className="file-tab-dot" style={{ background: cfg.color }} />
-          <span>{fileName}</span>
+    <section className="editor-panel" aria-label="Code editor">
+      <header className="editor-header">
+        <div className="file-name">
+          <span className="file-language">{config.icon}</span>
+          <strong>{FILE_NAMES[language] || 'main.txt'}</strong>
         </div>
-      </div>
+        <span className="entry-contract">stdin / stdout</span>
+      </header>
 
-      <div className="editor-container">
-        <MonacoEditor
+      <div className="editor-canvas">
+        <Editor
           height="100%"
-          language={cfg.monacoLang}
+          language={config.monacoLang}
           value={code}
-          theme={monacoTheme}
+          theme={theme === 'dark' ? 'vs-dark' : 'light'}
           onChange={(value) => onCodeChange(value || '')}
-          onMount={handleEditorMount}
+          onMount={(editor) => editor.focus()}
+          loading={<div className="page-state">Loading editor...</div>}
           options={{
-            fontSize: 14,
-            fontFamily: "Consolas, 'Courier New', monospace",
-            lineNumbers: 'on',
+            automaticLayout: true,
             minimap: { enabled: false },
+            fontFamily: 'Consolas, "Courier New", monospace',
+            fontSize: 14,
+            lineHeight: 22,
+            lineNumbersMinChars: 3,
+            padding: { top: 14, bottom: 14 },
             scrollBeyondLastLine: false,
             smoothScrolling: true,
-            padding: { top: 14, bottom: 14 },
-            folding: true,
-            automaticLayout: true,
             tabSize: 4,
             insertSpaces: true,
-            wordWrap: 'off',
-            renderLineHighlight: 'gutter',
-            overviewRulerLanes: 0,
+            wordWrap: 'on',
+            renderLineHighlight: 'line',
+            bracketPairColorization: { enabled: true },
           }}
         />
-        {!hasCode && (
-          <div className="editor-empty-overlay">
-            Select a question and wait for the starter code to load.
-          </div>
-        )}
       </div>
 
-      <div className="editor-toolbar">
-        <div className="editor-meta-group">
-          <div className="lang-badge">{cfg.label}</div>
-          <div className="editor-status-pill">{statusLabel}</div>
+      <footer className="editor-toolbar">
+        <span className="editor-status">{code.trim() ? 'Ready' : 'Add your solution to continue'}</span>
+        <div className="editor-actions">
+          <button className="button button-secondary" disabled={disabled} type="button" onClick={onRun}>
+            {busyAction === 'run' ? 'Running' : `Run case ${selectedCaseNumber || 1}`}
+          </button>
+          <button className="button button-primary" disabled={disabled} type="button" onClick={onSubmit}>
+            {busyAction === 'submit' ? 'Submitting' : 'Submit'}
+          </button>
         </div>
-
-        <button
-          type="button"
-          id="btn-run-code"
-          className="btn-run"
-          onClick={onRun}
-          disabled={!hasCode || isRunning || isAnalyzing}
-        >
-          {isRunning ? 'Running...' : 'Run'}
-        </button>
-
-        <button
-          type="button"
-          id="btn-submit-analysis"
-          className={`btn-submit ${!isAnalyzing ? 'btn-submit-pulse' : ''}`}
-          onClick={onSubmit}
-          disabled={!hasCode || isAnalyzing || isRunning}
-        >
-          {isAnalyzing ? 'Submitting...' : 'Submit'}
-        </button>
-      </div>
-
-      <div
-        className="editor-statusbar"
-      >
-        <span>Ln {lineCol.line}, Col {lineCol.col}</span>
-        <span>{fileName}</span>
-        <span style={{ marginLeft: 'auto' }}>UTF-8</span>
-      </div>
-    </div>
+      </footer>
+    </section>
   )
 }

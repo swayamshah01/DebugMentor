@@ -242,6 +242,17 @@ def run_code_batch(user_code: str, language: str, test_inputs: list[str]) -> lis
                         timed_out=True,
                     )
                 )
+            except FileNotFoundError as exc:
+                tool = Path(exc.filename).name if exc.filename else lang
+                results.append(
+                    _result(
+                        started_at,
+                        lang,
+                        stderr=f"Required runtime '{tool}' is not installed on the server.",
+                        exit_code=1,
+                        stage="compile",
+                    )
+                )
             except Exception as exc:
                 results.append(
                     _result(started_at, lang, stderr=f"Execution service error: {exc}", exit_code=1)

@@ -33,7 +33,6 @@ def reveal_hint(
     if not isinstance(submission.hints, dict) or not submission.hints.get("hints"):
         try:
             submission.hints = generate_hint_bundle(submission, submission.problem)
-            submission.feedback = submission.hints.get("diagnosis")
         except HintGenerationError as exc:
             db.rollback()
             raise HTTPException(status_code=503, detail=str(exc)) from exc

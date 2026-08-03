@@ -1,70 +1,67 @@
-import { OutputTab } from './OutputTab'
-import { HintsTab } from './HintsTab'
-import { TestCasesTab } from './TestCasesTab'
+import HintsTab from './HintsTab'
+import ResultPanel from './ResultPanel'
+import TestCasesTab from './TestCasesTab'
+
 
 export default function OutputPanel({
-  activeTab,
-  setActiveTab,
+  activePanel,
   problem,
-  analysisResult,
-  isAnalyzing,
-  isRunning,
-  runResult,
-  language,
-  revealHint,
-  onGenerateHints,
-  selectedVisibleTestCaseId,
-  onSelectVisibleTestCase,
+  selectedTestCaseId,
+  gradeResult,
+  submissionResult,
+  hints,
+  busyAction,
+  requestError,
+  hintError,
+  onPanelChange,
+  onSelectTestCase,
+  onRequestHint,
 }) {
-  const astCount = analysisResult?.astIssues?.length ?? null
-  const visibleTestCount = problem?.test_cases?.length ?? 0
-  const testCount = analysisResult?.testCases?.length ?? visibleTestCount
-
   const tabs = [
-    { id: 'tests', label: 'Testcase', badge: testCount },
-    { id: 'output', label: 'Result', badge: null },
-    { id: 'hints', label: 'Hints', badge: astCount },
+    { id: 'tests', label: 'Test cases', badge: problem?.test_cases?.length || 0 },
+    { id: 'result', label: 'Result', badge: gradeResult?.failedTests || null },
+    { id: 'hints', label: 'Hints', badge: hints.length || null },
   ]
 
   return (
-    <div className="output-panel">
-      <div className="panel-tabs">
+    <section className="practice-panel" aria-label="Practice feedback">
+      <nav className="practice-tabs" role="tablist">
         {tabs.map((tab) => (
           <button
+            type="button"
+            role="tab"
+            aria-selected={activePanel === tab.id}
+            className={activePanel === tab.id ? 'active' : ''}
             key={tab.id}
-            id={`tab-btn-${tab.id}`}
-            className={`panel-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => onPanelChange(tab.id)}
           >
             {tab.label}
-            {tab.badge !== null && <span className="tab-count">{tab.badge}</span>}
+            {tab.badge ? <span>{tab.badge}</span> : null}
           </button>
         ))}
-      </div>
+      </nav>
 
-      <div className="panel-content">
-        {activeTab === 'output' && (
-          <OutputTab runResult={runResult} isRunning={isRunning} language={language} />
-        )}
-        {activeTab === 'hints' && (
-          <HintsTab
-            analysisResult={analysisResult}
-            isAnalyzing={isAnalyzing}
-            revealHint={revealHint}
-            onGenerateHints={onGenerateHints}
-          />
-        )}
-        {activeTab === 'tests' && (
+      <div className="practice-panel-body">
+        {activePanel === 'tests' && (
           <TestCasesTab
             problem={problem}
-            analysisResult={analysisResult}
-            runResult={runResult}
-            isAnalyzing={isAnalyzing}
-            selectedVisibleTestCaseId={selectedVisibleTestCaseId}
-            onSelectVisibleTestCase={onSelectVisibleTestCase}
+            selectedTestCaseId={selectedTestCaseId}
+            onSelectTestCase={onSelectTestCase}
+          />
+        )}
+        {activePanel === 'result' && (
+          <ResultPanel result={gradeResult} requestError={requestError} />
+        )}
+        {activePanel === 'hints' && (
+          <HintsTab
+            submission={submissionResult}
+            hints={hints}
+            busy={busyAction === 'hint'}
+            error={hintError}
+            onRequestHint={onRequestHint}
           />
         )}
       </div>
-    </div>
+    </section>
   )
 }

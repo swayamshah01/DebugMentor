@@ -1,13 +1,9 @@
-"""
-routers/profile.py — Learning Profile System (Phase 4)
-
-Provides user-specific learning insights: top mistakes, submission history, stats.
-"""
+"""User progress, submission history, and practice insights."""
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, cast, Integer
+from sqlalchemy import desc, func
 
 from app.database import get_db
 from app.models.user import User
@@ -126,7 +122,7 @@ def get_profile(
     # 2. Query submission history (newest first)
     submissions = (
         db.query(Submission, Problem, Pattern)
-        .join(Problem, cast(Submission.problem_id, Integer) == Problem.id, isouter=True)
+        .join(Problem, Submission.problem_id == Problem.id, isouter=True)
         .join(Pattern, Problem.pattern_id == Pattern.id, isouter=True)
         .filter(Submission.user_id == user_id)
         .order_by(desc(Submission.submitted_at))
