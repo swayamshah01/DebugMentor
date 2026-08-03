@@ -1,89 +1,67 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
-from sqlalchemy.orm import Session
-import logging
+"""Reveal generated hints progressively for a failed submission."""
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.auth import get_current_user
 from app.database import get_db
 from app.models.submission import Submission
-from app.models.mistake import Mistake
-from app.engines.llm_layer import redis_client
+from app.models.user import User
+from app.schemas.grading import HintRequest, HintResponse
+from app.services.hints import HintGenerationError, generate_hint_bundle
 
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/hint", summary="Reveal next progressive hint")
+
+@router.post("/hint", response_model=HintResponse, summary="Reveal the next personalized hint")
 def reveal_hint(
-    submission_id: int = Body(...),
-    user_id: int = Body(None),
-    db: Session = Depends(get_db)
-):
-    """
-    POST /api/hint
-    Increments the hint level in Redis and returns the specific hint payload.
-    Logs usage into the Phase 4 Mistake table.
-    """
-    # 1. Look up submission
-    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    payload: HintRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> HintResponse:
+    submission = db.query(Submission).filter(Submission.id == payload.submission_id).with_for_update().first()
     if not submission:
-        raise HTTPException(status_code=404, detail="Submission not found")
-        
-    hints_data = submission.hints or {}
-        
-    # 2. Get current hint level from Redis
-    raw_user_id = user_id if user_id else "anon"
-    redis_key = f"hint_level:{raw_user_id}:{submission_id}"
-    
-    current_level = 0
-    if redis_client:
+        raise HTTPException(status_code=404, detail="Submission not found.")
+    if submission.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only request hints for your own submission.")
+    if submission.status == "passed":
+        raise HTTPException(status_code=409, detail="This submission already passes every test.")
+    if not submission.problem:
+        raise HTTPException(status_code=409, detail="This submission is not linked to a practice problem.")
+
+    if not isinstance(submission.hints, dict) or not submission.hints.get("hints"):
         try:
-            val = redis_client.get(redis_key)
-            if val is not None:
-                current_level = int(val)
-        except Exception as e:
-            logger.warning("Redis read error on /hint: %s", e)
-            
-    # 3. Increment level
-    new_level = current_level + 1
-    if new_level > 3:
-        new_level = 3
-        
-    # 4. Write back to Redis
-    if redis_client:
-        try:
-            redis_client.setex(redis_key, 604800, str(new_level)) # 7 days TTL
-        except Exception as e:
-            logger.warning("Redis write error on /hint: %s", e)
-            
-    # 5. Extract hint payload
-    if new_level == 3:
-        hint_text = hints_data.get("solution_code") or hints_data.get("hint_3", "No solution available.")
+            submission.hints = generate_hint_bundle(submission, submission.problem)
+            submission.feedback = submission.hints.get("diagnosis")
+        except HintGenerationError as exc:
+            db.rollback()
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    next_level = min((submission.hint_level or 0) + 1, 3)
+    submission.hint_level = next_level
+
+    if next_level < 3:
+        generated_hint = submission.hints["hints"][next_level - 1]
+        title = generated_hint["title"]
+        content = generated_hint["content"]
+        focus = generated_hint["focus"]
+        solution_code = None
     else:
-        hint_text = hints_data.get(f"hint_{new_level}", "No hint available.")
-    
-    # 6. Database updates
-    if new_level == 3 and submission.hint_level < 3:
-        submission.hint_level = 3
-        db.commit()
-        
-    # Log to Mistakes table for Phase 4
-    if new_level > current_level and user_id:
-        error_category = "unknown_error"
-        if submission.test_results and isinstance(submission.test_results, dict):
-            error_category = submission.test_results.get("error_category", "unknown_error")
-            
-        mistake = Mistake(
-            user_id=user_id,
-            submission_id=submission_id,
-            mistake_type=error_category,
-            description=hint_text
-        )
-        db.add(mistake)
-        db.commit()
-        
-    return {
-        "level": new_level,
-        "hint": hint_text,
-        "is_solution": new_level == 3,
-        "solution_code": hints_data.get("solution_code") if new_level == 3 else None,
-        "levels_remaining": 3 - new_level
-    }
+        solution = submission.hints["solution"]
+        title = solution["title"]
+        content = solution["explanation"]
+        focus = "solution"
+        solution_code = solution["code"]
+
+    db.commit()
+    return HintResponse(
+        submission_id=submission.id,
+        level=next_level,
+        title=title,
+        content=content,
+        focus=focus,
+        is_solution=next_level == 3,
+        solution_code=solution_code,
+        levels_remaining=3 - next_level,
+    )

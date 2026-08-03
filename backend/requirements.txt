@@ -1,25 +1,14 @@
-# ── Web framework ─────────────────────────────────────────────────
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
 python-multipart==0.0.12
 
-# ── Database ──────────────────────────────────────────────────────
 sqlalchemy==2.0.36
 alembic==1.13.3
 psycopg2-binary==2.9.10
 
-# ── Validation & settings ─────────────────────────────────────────
-pydantic==2.9.2
-pydantic[email]
+pydantic[email]==2.9.2
 python-dotenv==1.0.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
-
-# ── Dev utilities ─────────────────────────────────────────────────
-pytest==8.3.3
 httpx==0.28.1
-
-# ── Phase 3 ───────────────────────────────────────────────────────
-google-generativeai==0.8.3
-redis==7.4.0

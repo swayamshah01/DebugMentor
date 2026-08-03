@@ -20,21 +20,21 @@ LANGUAGES = ("python", "javascript", "java", "cpp")
 
 
 PROBLEM_SIGNATURES = {
-    "two-sum": {"function_name": "two_sum", "params": [("nums", "int_array"), ("target", "int")], "return_type": "int_array"},
-    "best-time-to-buy-and-sell-stock": {"function_name": "max_profit", "params": [("prices", "int_array")], "return_type": "int"},
-    "move-zeroes": {"function_name": "move_zeroes", "params": [("nums", "int_array")], "return_type": "int_array"},
-    "product-of-array-except-self": {"function_name": "product_except_self", "params": [("nums", "int_array")], "return_type": "int_array"},
-    "valid-palindrome": {"function_name": "is_palindrome", "params": [("s", "string")], "return_type": "bool"},
-    "two-sum-ii-sorted": {"function_name": "two_sum_sorted", "params": [("numbers", "int_array"), ("target", "int")], "return_type": "int_array"},
-    "longest-substring-without-repeating": {"function_name": "length_of_longest_substring", "params": [("s", "string")], "return_type": "int"},
-    "maximum-average-subarray": {"function_name": "find_max_average", "params": [("nums", "int_array"), ("k", "int")], "return_type": "float"},
-    "binary-search": {"function_name": "search", "params": [("nums", "int_array"), ("target", "int")], "return_type": "int"},
-    "search-insert-position": {"function_name": "search_insert", "params": [("nums", "int_array"), ("target", "int")], "return_type": "int"},
-    "reverse-string": {"function_name": "reverse_string", "params": [("s", "string")], "return_type": "string"},
-    "valid-anagram": {"function_name": "is_anagram", "params": [("s", "string"), ("t", "string")], "return_type": "bool"},
-    "climbing-stairs": {"function_name": "climb_stairs", "params": [("n", "int")], "return_type": "int"},
-    "maximum-subarray": {"function_name": "max_sub_array", "params": [("nums", "int_array")], "return_type": "int"},
-    "container-with-most-water": {"function_name": "max_area", "params": [("height", "int_array")], "return_type": "int"},
+    "two-sum": {"params": [("nums", "int_array"), ("target", "int")], "return_type": "int_array"},
+    "best-time-to-buy-and-sell-stock": {"params": [("prices", "int_array")], "return_type": "int"},
+    "move-zeroes": {"params": [("nums", "int_array")], "return_type": "int_array"},
+    "product-of-array-except-self": {"params": [("nums", "int_array")], "return_type": "int_array"},
+    "valid-palindrome": {"params": [("s", "string")], "return_type": "bool"},
+    "two-sum-ii-sorted": {"params": [("numbers", "int_array"), ("target", "int")], "return_type": "int_array"},
+    "longest-substring-without-repeating": {"params": [("s", "string")], "return_type": "int"},
+    "maximum-average-subarray": {"params": [("nums", "int_array"), ("k", "int")], "return_type": "float"},
+    "binary-search": {"params": [("nums", "int_array"), ("target", "int")], "return_type": "int"},
+    "search-insert-position": {"params": [("nums", "int_array"), ("target", "int")], "return_type": "int"},
+    "reverse-string": {"params": [("s", "string")], "return_type": "string"},
+    "valid-anagram": {"params": [("s", "string"), ("t", "string")], "return_type": "bool"},
+    "climbing-stairs": {"params": [("n", "int")], "return_type": "int"},
+    "maximum-subarray": {"params": [("nums", "int_array")], "return_type": "int"},
+    "container-with-most-water": {"params": [("height", "int_array")], "return_type": "int"},
 }
 
 JAVA_TYPE_MAP = {
@@ -54,23 +54,102 @@ CPP_TYPE_MAP = {
 }
 
 
-def leetcode_starter(problem_slug: str, language: str) -> str:
+def _python_input_expr(index: int, param_type: str) -> str:
+    value = f"values[{index}] if len(values) > {index} else {_python_default(param_type)}"
+    if param_type == "int":
+        return f"int({value})"
+    if param_type == "float":
+        return f"float({value})"
+    if param_type == "bool":
+        return f"bool({value})"
+    return value
+
+
+def _python_default(value_type: str) -> str:
+    return {
+        "int": "0",
+        "float": "0.0",
+        "bool": "False",
+        "string": '""',
+        "int_array": "[]",
+    }[value_type]
+
+
+def _javascript_default(value_type: str) -> str:
+    return {
+        "int": "0",
+        "float": "0",
+        "bool": "false",
+        "string": "''",
+        "int_array": "[]",
+    }[value_type]
+
+
+def _javascript_format(value_type: str) -> str:
+    return "JSON.stringify(answer)" if value_type in {"int_array", "bool"} else "answer"
+
+
+def _java_default_value(value_type: str) -> str:
+    return {
+        "int": "0",
+        "float": "0.0",
+        "bool": "false",
+        "string": '""',
+        "int_array": "new int[0]",
+    }[value_type]
+
+
+def _cpp_default_value(value_type: str) -> str:
+    return {
+        "int": "0",
+        "float": "0.0",
+        "bool": "false",
+        "string": '""',
+        "int_array": "{}",
+    }[value_type]
+
+
+def program_starter(problem_slug: str, language: str) -> str:
     signature = PROBLEM_SIGNATURES[problem_slug]
-    function_name = signature["function_name"]
     params = signature["params"]
     return_type = signature["return_type"]
 
     if language == "python":
-        args = ", ".join(name for name, _ in params)
-        return f"""def {function_name}({args}):
-    # Write your code here
-    pass
+        assignments = "\n".join(
+            f"    {name} = {_python_input_expr(index, param_type)}"
+            for index, (name, param_type) in enumerate(params)
+        )
+        return f"""import ast
+import sys
+
+
+def parse_value(raw):
+    try:
+        return ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        return raw
+
+
+def main():
+    values = [parse_value(line) for line in sys.stdin.read().splitlines()]
+{assignments}
+
+    # Write your solution here.
+    answer = {_python_default(return_type)}
+    print(answer)
+
+
+if __name__ == "__main__":
+    main()
 """
 
     if language == "javascript":
-        args = ", ".join(name for name, _ in params)
+        assignments = "\n".join(
+            f"  const {name} = input.length > {index} ? parseValue(input[{index}]) : {_javascript_default(param_type)};"
+            for index, (name, param_type) in enumerate(params)
+        )
         return f"""const fs = require('fs');
-const input = fs.readFileSync(0, 'utf8').split(/\\r?\\n/).filter(line => line.length > 0);
+const input = fs.readFileSync(0, 'utf8').replace(/\\r/g, '').split('\\n');
 
 function parseValue(value) {{
   try {{
@@ -81,21 +160,21 @@ function parseValue(value) {{
   }}
 }}
 
-function {function_name}({args}) {{
-  // Write your code here
-  return null;
+function main() {{
+{assignments}
+
+  // Write your solution here.
+  const answer = {_javascript_default(return_type)};
+  console.log({_javascript_format(return_type)});
 }}
 
-const args = input.map(parseValue);
-const result = {function_name}(...args);
-console.log(JSON.stringify(result));
+main();
 """
 
     if language == "java":
-        java_args = ", ".join(f"{JAVA_TYPE_MAP[param_type]} {param_name}" for param_name, param_type in params)
-        java_call_args = ", ".join(
-            _java_parse_expr(index, param_type)
-            for index, (_, param_type) in enumerate(params)
+        java_assignments = "\n".join(
+            f"        {JAVA_TYPE_MAP[param_type]} {param_name} = {_java_parse_expr(index, param_type)};"
+            for index, (param_name, param_type) in enumerate(params)
         )
         java_return_type = JAVA_TYPE_MAP[return_type]
         return f"""import java.io.BufferedReader;
@@ -103,7 +182,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Solution {{
+public class Main {{
     private static int[] parseIntArray(String raw) {{
         String cleaned = raw.trim();
         if (cleaned.length() <= 2) return new int[0];
@@ -142,28 +221,25 @@ public class Solution {{
 {_java_format_result(return_type)}
     }}
 
-    public static {java_return_type} {function_name}({java_args}) {{
-        // Write your code here
-{_java_default_return(return_type)}
-    }}
-
     public static void main(String[] args) throws Exception {{
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         List<String> input = new ArrayList<>();
         String line;
         while ((line = br.readLine()) != null) {{
-            if (!line.isBlank()) input.add(line.trim());
+            input.add(line);
         }}
-        {java_return_type} result = {function_name}({java_call_args});
-        System.out.println(formatResult(result));
+{java_assignments}
+
+        // Write your solution here.
+        {java_return_type} answer = {_java_default_value(return_type)};
+        System.out.println(formatResult(answer));
     }}
 }}
 """
 
-    cpp_args = ", ".join(f"{CPP_TYPE_MAP[param_type]} {param_name}" for param_name, param_type in params)
-    cpp_call_args = ", ".join(
-        _cpp_parse_expr(index, param_type)
-        for index, (_, param_type) in enumerate(params)
+    cpp_assignments = "\n".join(
+        f"    {CPP_TYPE_MAP[param_type]} {param_name} = {_cpp_parse_expr(index, param_type)};"
+        for index, (param_name, param_type) in enumerate(params)
     )
     cpp_return_type = CPP_TYPE_MAP[return_type]
     return f"""#include <bits/stdc++.h>
@@ -209,20 +285,18 @@ string formatResult({cpp_return_type} result) {{
 {_cpp_format_result(return_type)}
 }}
 
-{cpp_return_type} {function_name}({cpp_args}) {{
-    // Write your code here
-{_cpp_default_return(return_type)}
-}}
-
 int main() {{
     vector<string> input;
     string line;
     while (getline(cin, line)) {{
-        if (!line.empty()) input.push_back(line);
+        input.push_back(line);
     }}
 
-    {cpp_return_type} result = {function_name}({cpp_call_args});
-    cout << formatResult(result) << endl;
+{cpp_assignments}
+
+    // Write your solution here.
+    {cpp_return_type} answer = {_cpp_default_value(return_type)};
+    cout << formatResult(answer) << endl;
     return 0;
 }}
 """
@@ -239,17 +313,6 @@ def _java_parse_expr(index: int, param_type: str) -> str:
     if param_type == "int_array":
         return f"parseIntArray({raw})"
     return f"parseString({raw})"
-
-
-def _java_default_return(return_type: str) -> str:
-    defaults = {
-        "int": "        return 0;",
-        "float": "        return 0.0;",
-        "bool": "        return false;",
-        "string": '        return "";',
-        "int_array": "        return new int[0];",
-    }
-    return defaults[return_type]
 
 
 def _java_format_result(return_type: str) -> str:
@@ -276,17 +339,6 @@ def _cpp_parse_expr(index: int, param_type: str) -> str:
     return f"parseString({raw})"
 
 
-def _cpp_default_return(return_type: str) -> str:
-    defaults = {
-        "int": "    return 0;",
-        "float": "    return 0.0;",
-        "bool": "    return false;",
-        "string": '    return "";',
-        "int_array": "    return {};",
-    }
-    return defaults[return_type]
-
-
 def _cpp_format_result(return_type: str) -> str:
     formatters = {
         "int": "    return to_string(result);",
@@ -298,8 +350,37 @@ def _cpp_format_result(return_type: str) -> str:
     return formatters[return_type]
 
 
-def leetcode_starters(problem_slug: str) -> Dict[str, str]:
-    return {language: leetcode_starter(problem_slug, language) for language in LANGUAGES}
+def program_starters(problem_slug: str) -> Dict[str, str]:
+    return {language: program_starter(problem_slug, language) for language in LANGUAGES}
+
+
+INPUT_TYPE_LABELS = {
+    "int": "an integer",
+    "float": "a number",
+    "bool": "true or false",
+    "string": "a string without surrounding quotes",
+    "int_array": "a JSON-style integer array, for example [1, 2, 3]",
+}
+
+OUTPUT_TYPE_LABELS = {
+    "int": "Print one integer.",
+    "float": "Print one number. Answers within 1e-6 are accepted.",
+    "bool": "Print true or false.",
+    "string": "Print the resulting string.",
+    "int_array": "Print the resulting indices or values as an array, for example [0, 1].",
+}
+
+
+def problem_input_format(problem_slug: str) -> str:
+    params = PROBLEM_SIGNATURES[problem_slug]["params"]
+    return "\n".join(
+        f"Line {index}: {name} - {INPUT_TYPE_LABELS[param_type]}."
+        for index, (name, param_type) in enumerate(params, start=1)
+    )
+
+
+def problem_output_format(problem_slug: str) -> str:
+    return OUTPUT_TYPE_LABELS[PROBLEM_SIGNATURES[problem_slug]["return_type"]]
 
 
 PATTERNS = [
@@ -348,1436 +429,6 @@ PATTERNS = [
 ]
 
 
-def starter_two_sum(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-target = int(input().strip())
-
-seen = {}
-answer = []
-for i, num in enumerate(nums):
-    needed = target - num
-    if needed in seen:
-        answer = [seen[needed], i]
-        break
-    seen[num] = i
-
-print(answer)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const lines = fs.readFileSync(0, 'utf8').trim().split(/\\r?\\n/);
-const nums = JSON.parse(lines[0]);
-const target = Number(lines[1]);
-
-const seen = new Map();
-let answer = [];
-for (let i = 0; i < nums.length; i += 1) {
-  const needed = target - nums[i];
-  if (seen.has(needed)) {
-    answer = [seen.get(needed), i];
-    break;
-  }
-  seen.set(nums[i], i);
-}
-
-console.log(JSON.stringify(answer));
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) {
-            nums[i] = Integer.parseInt(parts[i].trim());
-        }
-        return nums;
-    }
-
-    private static String formatArray(int[] nums) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < nums.length; i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(nums[i]);
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-        int target = Integer.parseInt(br.readLine().trim());
-
-        Map<Integer, Integer> seen = new HashMap<>();
-        int[] answer = new int[0];
-        for (int i = 0; i < nums.length; i++) {
-            int needed = target - nums[i];
-            if (seen.containsKey(needed)) {
-                answer = new int[]{seen.get(needed), i};
-                break;
-            }
-            seen.put(nums[i], i);
-        }
-
-        System.out.println(formatArray(answer));
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) {
-        result.push_back(stoi(part));
-    }
-    return result;
-}
-
-string formatArray(const vector<int>& nums) {
-    stringstream out;
-    out << "[";
-    for (size_t i = 0; i < nums.size(); ++i) {
-        if (i > 0) out << ", ";
-        out << nums[i];
-    }
-    out << "]";
-    return out.str();
-}
-
-int main() {
-    string numsLine;
-    string targetLine;
-    getline(cin, numsLine);
-    getline(cin, targetLine);
-
-    vector<int> nums = parseIntArray(numsLine);
-    int target = stoi(targetLine);
-    unordered_map<int, int> seen;
-    vector<int> answer;
-
-    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
-        int needed = target - nums[i];
-        if (seen.count(needed)) {
-            answer = {seen[needed], i};
-            break;
-        }
-        seen[nums[i]] = i;
-    }
-
-    cout << formatArray(answer) << endl;
-    return 0;
-}
-"""
-
-
-def starter_stock(language: str) -> str:
-    body = {
-        "python": """prices = eval(input().strip())
-
-best = 0
-min_price = float("inf")
-for price in prices:
-    min_price = min(min_price, price)
-    best = max(best, price - min_price)
-
-print(best)
-""",
-        "javascript": """const fs = require('fs');
-const prices = JSON.parse(fs.readFileSync(0, 'utf8').trim());
-
-let best = 0;
-let minPrice = Infinity;
-for (const price of prices) {
-  minPrice = Math.min(minPrice, price);
-  best = Math.max(best, price - minPrice);
-}
-
-console.log(best);
-""",
-        "java": """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] prices = parseIntArray(br.readLine());
-
-        int best = 0;
-        int minPrice = Integer.MAX_VALUE;
-        for (int price : prices) {
-            minPrice = Math.min(minPrice, price);
-            best = Math.max(best, price - minPrice);
-        }
-
-        System.out.println(best);
-    }
-}
-""",
-        "cpp": """#include <climits>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-int main() {
-    string line;
-    getline(cin, line);
-    vector<int> prices = parseIntArray(line);
-
-    int best = 0;
-    int minPrice = INT_MAX;
-    for (int price : prices) {
-        minPrice = min(minPrice, price);
-        best = max(best, price - minPrice);
-    }
-
-    cout << best << endl;
-    return 0;
-}
-""",
-    }
-    return body[language]
-
-
-def starter_move_zeroes(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-
-insert = 0
-for num in nums:
-    if num != 0:
-        nums[insert] = num
-        insert += 1
-while insert < len(nums):
-    nums[insert] = 0
-    insert += 1
-
-print(nums)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const nums = JSON.parse(fs.readFileSync(0, 'utf8').trim());
-
-let insert = 0;
-for (const num of nums) {
-  if (num !== 0) {
-    nums[insert] = num;
-    insert += 1;
-  }
-}
-while (insert < nums.length) {
-  nums[insert] = 0;
-  insert += 1;
-}
-
-console.log(JSON.stringify(nums));
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    private static String formatArray(int[] nums) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < nums.length; i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(nums[i]);
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-
-        int insert = 0;
-        for (int num : nums) {
-            if (num != 0) nums[insert++] = num;
-        }
-        while (insert < nums.length) nums[insert++] = 0;
-
-        System.out.println(formatArray(nums));
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-string formatArray(const vector<int>& nums) {
-    stringstream out;
-    out << "[";
-    for (size_t i = 0; i < nums.size(); ++i) {
-        if (i > 0) out << ", ";
-        out << nums[i];
-    }
-    out << "]";
-    return out.str();
-}
-
-int main() {
-    string line;
-    getline(cin, line);
-    vector<int> nums = parseIntArray(line);
-
-    int insert = 0;
-    for (int num : nums) {
-        if (num != 0) nums[insert++] = num;
-    }
-    while (insert < static_cast<int>(nums.size())) nums[insert++] = 0;
-
-    cout << formatArray(nums) << endl;
-    return 0;
-}
-"""
-
-
-def starter_product_except_self(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-n = len(nums)
-answer = [1] * n
-
-prefix = 1
-for i in range(n):
-    answer[i] = prefix
-    prefix *= nums[i]
-
-suffix = 1
-for i in range(n - 1, -1, -1):
-    answer[i] *= suffix
-    suffix *= nums[i]
-
-print(answer)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const nums = JSON.parse(fs.readFileSync(0, 'utf8').trim());
-const answer = new Array(nums.length).fill(1);
-
-let prefix = 1;
-for (let i = 0; i < nums.length; i += 1) {
-  answer[i] = prefix;
-  prefix *= nums[i];
-}
-
-let suffix = 1;
-for (let i = nums.length - 1; i >= 0; i -= 1) {
-  answer[i] *= suffix;
-  suffix *= nums[i];
-}
-
-console.log(JSON.stringify(answer));
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    private static String formatArray(int[] nums) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < nums.length; i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(nums[i]);
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-        int[] answer = new int[nums.length];
-
-        int prefix = 1;
-        for (int i = 0; i < nums.length; i++) {
-            answer[i] = prefix;
-            prefix *= nums[i];
-        }
-
-        int suffix = 1;
-        for (int i = nums.length - 1; i >= 0; i--) {
-            answer[i] *= suffix;
-            suffix *= nums[i];
-        }
-
-        System.out.println(formatArray(answer));
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-string formatArray(const vector<int>& nums) {
-    stringstream out;
-    out << "[";
-    for (size_t i = 0; i < nums.size(); ++i) {
-        if (i > 0) out << ", ";
-        out << nums[i];
-    }
-    out << "]";
-    return out.str();
-}
-
-int main() {
-    string line;
-    getline(cin, line);
-    vector<int> nums = parseIntArray(line);
-    vector<int> answer(nums.size(), 1);
-
-    int prefix = 1;
-    for (int i = 0; i < static_cast<int>(nums.size()); ++i) {
-        answer[i] = prefix;
-        prefix *= nums[i];
-    }
-
-    int suffix = 1;
-    for (int i = static_cast<int>(nums.size()) - 1; i >= 0; --i) {
-        answer[i] *= suffix;
-        suffix *= nums[i];
-    }
-
-    cout << formatArray(answer) << endl;
-    return 0;
-}
-"""
-
-
-def starter_valid_palindrome(language: str) -> str:
-    if language == "python":
-        return """s = input().rstrip("\\n")
-filtered = [ch.lower() for ch in s if ch.isalnum()]
-print(str(filtered == filtered[::-1]))
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const s = fs.readFileSync(0, 'utf8').trimEnd();
-const filtered = [...s.toLowerCase()].filter(ch => /[a-z0-9]/.test(ch)).join('');
-console.log(filtered === [...filtered].reverse().join('') ? 'True' : 'False');
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String s = br.readLine();
-        if (s == null) s = "";
-        StringBuilder filtered = new StringBuilder();
-        for (char ch : s.toLowerCase().toCharArray()) {
-            if (Character.isLetterOrDigit(ch)) filtered.append(ch);
-        }
-        String cleaned = filtered.toString();
-        String reversed = filtered.reverse().toString();
-        System.out.println(cleaned.equals(reversed) ? "True" : "False");
-    }
-}
-"""
-    return """#include <algorithm>
-#include <cctype>
-#include <iostream>
-#include <string>
-using namespace std;
-
-int main() {
-    string s;
-    getline(cin, s);
-    string filtered;
-    for (char ch : s) {
-        if (isalnum(static_cast<unsigned char>(ch))) {
-            filtered.push_back(static_cast<char>(tolower(static_cast<unsigned char>(ch))));
-        }
-    }
-    string reversed = filtered;
-    reverse(reversed.begin(), reversed.end());
-    cout << (filtered == reversed ? "True" : "False") << endl;
-    return 0;
-}
-"""
-
-
-def starter_two_sum_sorted(language: str) -> str:
-    if language == "python":
-        return """numbers = eval(input().strip())
-target = int(input().strip())
-
-left, right = 0, len(numbers) - 1
-answer = []
-while left < right:
-    total = numbers[left] + numbers[right]
-    if total == target:
-        answer = [left + 1, right + 1]
-        break
-    if total < target:
-        left += 1
-    else:
-        right -= 1
-
-print(answer)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const lines = fs.readFileSync(0, 'utf8').trim().split(/\\r?\\n/);
-const numbers = JSON.parse(lines[0]);
-const target = Number(lines[1]);
-
-let left = 0;
-let right = numbers.length - 1;
-let answer = [];
-while (left < right) {
-  const total = numbers[left] + numbers[right];
-  if (total === target) {
-    answer = [left + 1, right + 1];
-    break;
-  }
-  if (total < target) left += 1;
-  else right -= 1;
-}
-
-console.log(JSON.stringify(answer));
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    private static String formatArray(int[] nums) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < nums.length; i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(nums[i]);
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] numbers = parseIntArray(br.readLine());
-        int target = Integer.parseInt(br.readLine().trim());
-
-        int left = 0;
-        int right = numbers.length - 1;
-        int[] answer = new int[0];
-        while (left < right) {
-            int total = numbers[left] + numbers[right];
-            if (total == target) {
-                answer = new int[]{left + 1, right + 1};
-                break;
-            }
-            if (total < target) left++;
-            else right--;
-        }
-
-        System.out.println(formatArray(answer));
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-string formatArray(const vector<int>& nums) {
-    stringstream out;
-    out << "[";
-    for (size_t i = 0; i < nums.size(); ++i) {
-        if (i > 0) out << ", ";
-        out << nums[i];
-    }
-    out << "]";
-    return out.str();
-}
-
-int main() {
-    string numbersLine;
-    string targetLine;
-    getline(cin, numbersLine);
-    getline(cin, targetLine);
-    vector<int> numbers = parseIntArray(numbersLine);
-    int target = stoi(targetLine);
-
-    int left = 0;
-    int right = static_cast<int>(numbers.size()) - 1;
-    vector<int> answer;
-    while (left < right) {
-        int total = numbers[left] + numbers[right];
-        if (total == target) {
-            answer = {left + 1, right + 1};
-            break;
-        }
-        if (total < target) left++;
-        else right--;
-    }
-
-    cout << formatArray(answer) << endl;
-    return 0;
-}
-"""
-
-
-def starter_longest_substring(language: str) -> str:
-    if language == "python":
-        return """s = input().rstrip("\\n")
-seen = {}
-left = 0
-best = 0
-
-for right, ch in enumerate(s):
-    if ch in seen and seen[ch] >= left:
-        left = seen[ch] + 1
-    seen[ch] = right
-    best = max(best, right - left + 1)
-
-print(best)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const s = fs.readFileSync(0, 'utf8').trimEnd();
-const seen = new Map();
-let left = 0;
-let best = 0;
-
-for (let right = 0; right < s.length; right += 1) {
-  const ch = s[right];
-  if (seen.has(ch) && seen.get(ch) >= left) {
-    left = seen.get(ch) + 1;
-  }
-  seen.set(ch, right);
-  best = Math.max(best, right - left + 1);
-}
-
-console.log(best);
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-
-public class Solution {
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String s = br.readLine();
-        if (s == null) s = "";
-
-        Map<Character, Integer> seen = new HashMap<>();
-        int left = 0;
-        int best = 0;
-        for (int right = 0; right < s.length(); right++) {
-            char ch = s.charAt(right);
-            if (seen.containsKey(ch) && seen.get(ch) >= left) {
-                left = seen.get(ch) + 1;
-            }
-            seen.put(ch, right);
-            best = Math.max(best, right - left + 1);
-        }
-
-        System.out.println(best);
-    }
-}
-"""
-    return """#include <iostream>
-#include <string>
-#include <unordered_map>
-using namespace std;
-
-int main() {
-    string s;
-    getline(cin, s);
-
-    unordered_map<char, int> seen;
-    int left = 0;
-    int best = 0;
-    for (int right = 0; right < static_cast<int>(s.size()); ++right) {
-        char ch = s[right];
-        if (seen.count(ch) && seen[ch] >= left) {
-            left = seen[ch] + 1;
-        }
-        seen[ch] = right;
-        best = max(best, right - left + 1);
-    }
-
-    cout << best << endl;
-    return 0;
-}
-"""
-
-
-def starter_max_average(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-k = int(input().strip())
-
-window_sum = sum(nums[:k])
-best = window_sum
-for i in range(k, len(nums)):
-    window_sum += nums[i] - nums[i - k]
-    best = max(best, window_sum)
-
-print(best / k)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const lines = fs.readFileSync(0, 'utf8').trim().split(/\\r?\\n/);
-const nums = JSON.parse(lines[0]);
-const k = Number(lines[1]);
-
-let windowSum = nums.slice(0, k).reduce((acc, val) => acc + val, 0);
-let best = windowSum;
-for (let i = k; i < nums.length; i += 1) {
-  windowSum += nums[i] - nums[i - k];
-  best = Math.max(best, windowSum);
-}
-
-console.log(best / k);
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-        int k = Integer.parseInt(br.readLine().trim());
-
-        int windowSum = 0;
-        for (int i = 0; i < k; i++) windowSum += nums[i];
-        int best = windowSum;
-        for (int i = k; i < nums.length; i++) {
-            windowSum += nums[i] - nums[i - k];
-            best = Math.max(best, windowSum);
-        }
-
-        System.out.println(best / (double) k);
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-int main() {
-    string numsLine;
-    string kLine;
-    getline(cin, numsLine);
-    getline(cin, kLine);
-    vector<int> nums = parseIntArray(numsLine);
-    int k = stoi(kLine);
-
-    int windowSum = 0;
-    for (int i = 0; i < k; ++i) windowSum += nums[i];
-    int best = windowSum;
-    for (int i = k; i < static_cast<int>(nums.size()); ++i) {
-        windowSum += nums[i] - nums[i - k];
-        best = max(best, windowSum);
-    }
-
-    cout << (best / static_cast<double>(k)) << endl;
-    return 0;
-}
-"""
-
-
-def starter_binary_search(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-target = int(input().strip())
-
-left, right = 0, len(nums) - 1
-answer = -1
-while left <= right:
-    mid = (left + right) // 2
-    if nums[mid] == target:
-        answer = mid
-        break
-    if nums[mid] < target:
-        left = mid + 1
-    else:
-        right = mid - 1
-
-print(answer)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const lines = fs.readFileSync(0, 'utf8').trim().split(/\\r?\\n/);
-const nums = JSON.parse(lines[0]);
-const target = Number(lines[1]);
-
-let left = 0;
-let right = nums.length - 1;
-let answer = -1;
-while (left <= right) {
-  const mid = Math.floor((left + right) / 2);
-  if (nums[mid] === target) {
-    answer = mid;
-    break;
-  }
-  if (nums[mid] < target) left = mid + 1;
-  else right = mid - 1;
-}
-
-console.log(answer);
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-        int target = Integer.parseInt(br.readLine().trim());
-
-        int left = 0;
-        int right = nums.length - 1;
-        int answer = -1;
-        while (left <= right) {
-            int mid = (left + right) / 2;
-            if (nums[mid] == target) {
-                answer = mid;
-                break;
-            }
-            if (nums[mid] < target) left = mid + 1;
-            else right = mid - 1;
-        }
-
-        System.out.println(answer);
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-int main() {
-    string numsLine;
-    string targetLine;
-    getline(cin, numsLine);
-    getline(cin, targetLine);
-    vector<int> nums = parseIntArray(numsLine);
-    int target = stoi(targetLine);
-
-    int left = 0;
-    int right = static_cast<int>(nums.size()) - 1;
-    int answer = -1;
-    while (left <= right) {
-        int mid = (left + right) / 2;
-        if (nums[mid] == target) {
-            answer = mid;
-            break;
-        }
-        if (nums[mid] < target) left = mid + 1;
-        else right = mid - 1;
-    }
-
-    cout << answer << endl;
-    return 0;
-}
-"""
-
-
-def starter_search_insert(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-target = int(input().strip())
-
-left, right = 0, len(nums)
-while left < right:
-    mid = (left + right) // 2
-    if nums[mid] < target:
-        left = mid + 1
-    else:
-        right = mid
-
-print(left)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const lines = fs.readFileSync(0, 'utf8').trim().split(/\\r?\\n/);
-const nums = JSON.parse(lines[0]);
-const target = Number(lines[1]);
-
-let left = 0;
-let right = nums.length;
-while (left < right) {
-  const mid = Math.floor((left + right) / 2);
-  if (nums[mid] < target) left = mid + 1;
-  else right = mid;
-}
-
-console.log(left);
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-        int target = Integer.parseInt(br.readLine().trim());
-
-        int left = 0;
-        int right = nums.length;
-        while (left < right) {
-            int mid = (left + right) / 2;
-            if (nums[mid] < target) left = mid + 1;
-            else right = mid;
-        }
-
-        System.out.println(left);
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-int main() {
-    string numsLine;
-    string targetLine;
-    getline(cin, numsLine);
-    getline(cin, targetLine);
-    vector<int> nums = parseIntArray(numsLine);
-    int target = stoi(targetLine);
-
-    int left = 0;
-    int right = static_cast<int>(nums.size());
-    while (left < right) {
-        int mid = (left + right) / 2;
-        if (nums[mid] < target) left = mid + 1;
-        else right = mid;
-    }
-
-    cout << left << endl;
-    return 0;
-}
-"""
-
-
-def starter_reverse_string(language: str) -> str:
-    if language == "python":
-        return """s = input().rstrip("\\n")
-print(s[::-1])
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const s = fs.readFileSync(0, 'utf8').trimEnd();
-console.log([...s].reverse().join(''));
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String s = br.readLine();
-        if (s == null) s = "";
-        System.out.println(new StringBuilder(s).reverse().toString());
-    }
-}
-"""
-    return """#include <algorithm>
-#include <iostream>
-#include <string>
-using namespace std;
-
-int main() {
-    string s;
-    getline(cin, s);
-    reverse(s.begin(), s.end());
-    cout << s << endl;
-    return 0;
-}
-"""
-
-
-def starter_valid_anagram(language: str) -> str:
-    if language == "python":
-        return """s = input().rstrip("\\n")
-t = input().rstrip("\\n")
-print(str(sorted(s) == sorted(t)))
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const lines = fs.readFileSync(0, 'utf8').trimEnd().split(/\\r?\\n/);
-const s = lines[0] || '';
-const t = lines[1] || '';
-const normalize = value => [...value].sort().join('');
-console.log(normalize(s) === normalize(t) ? 'True' : 'False');
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-
-public class Solution {
-    private static String sorted(String value) {
-        char[] chars = value.toCharArray();
-        Arrays.sort(chars);
-        return new String(chars);
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String s = br.readLine();
-        String t = br.readLine();
-        if (s == null) s = "";
-        if (t == null) t = "";
-        System.out.println(sorted(s).equals(sorted(t)) ? "True" : "False");
-    }
-}
-"""
-    return """#include <algorithm>
-#include <iostream>
-#include <string>
-using namespace std;
-
-int main() {
-    string s;
-    string t;
-    getline(cin, s);
-    getline(cin, t);
-    string a = s;
-    string b = t;
-    sort(a.begin(), a.end());
-    sort(b.begin(), b.end());
-    cout << (a == b ? "True" : "False") << endl;
-    return 0;
-}
-"""
-
-
-def starter_climbing_stairs(language: str) -> str:
-    if language == "python":
-        return """n = int(input().strip())
-
-if n <= 2:
-    print(n)
-else:
-    a, b = 1, 2
-    for _ in range(3, n + 1):
-        a, b = b, a + b
-    print(b)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const n = Number(fs.readFileSync(0, 'utf8').trim());
-
-if (n <= 2) {
-  console.log(n);
-} else {
-  let a = 1;
-  let b = 2;
-  for (let step = 3; step <= n; step += 1) {
-    [a, b] = [b, a + b];
-  }
-  console.log(b);
-}
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int n = Integer.parseInt(br.readLine().trim());
-
-        if (n <= 2) {
-            System.out.println(n);
-            return;
-        }
-
-        int a = 1;
-        int b = 2;
-        for (int step = 3; step <= n; step++) {
-            int next = a + b;
-            a = b;
-            b = next;
-        }
-
-        System.out.println(b);
-    }
-}
-"""
-    return """#include <iostream>
-using namespace std;
-
-int main() {
-    int n;
-    cin >> n;
-    if (n <= 2) {
-        cout << n << endl;
-        return 0;
-    }
-    int a = 1;
-    int b = 2;
-    for (int step = 3; step <= n; ++step) {
-        int next = a + b;
-        a = b;
-        b = next;
-    }
-    cout << b << endl;
-    return 0;
-}
-"""
-
-
-def starter_max_subarray(language: str) -> str:
-    if language == "python":
-        return """nums = eval(input().strip())
-current = best = nums[0]
-for num in nums[1:]:
-    current = max(num, current + num)
-    best = max(best, current)
-print(best)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const nums = JSON.parse(fs.readFileSync(0, 'utf8').trim());
-let current = nums[0];
-let best = nums[0];
-for (let i = 1; i < nums.length; i += 1) {
-  current = Math.max(nums[i], current + nums[i]);
-  best = Math.max(best, current);
-}
-console.log(best);
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] nums = parseIntArray(br.readLine());
-        int current = nums[0];
-        int best = nums[0];
-        for (int i = 1; i < nums.length; i++) {
-            current = Math.max(nums[i], current + nums[i]);
-            best = Math.max(best, current);
-        }
-        System.out.println(best);
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-int main() {
-    string line;
-    getline(cin, line);
-    vector<int> nums = parseIntArray(line);
-    int current = nums[0];
-    int best = nums[0];
-    for (int i = 1; i < static_cast<int>(nums.size()); ++i) {
-        current = max(nums[i], current + nums[i]);
-        best = max(best, current);
-    }
-    cout << best << endl;
-    return 0;
-}
-"""
-
-
-def starter_container(language: str) -> str:
-    if language == "python":
-        return """height = eval(input().strip())
-left, right = 0, len(height) - 1
-best = 0
-
-while left < right:
-    best = max(best, min(height[left], height[right]) * (right - left))
-    if height[left] < height[right]:
-        left += 1
-    else:
-        right -= 1
-
-print(best)
-"""
-    if language == "javascript":
-        return """const fs = require('fs');
-const height = JSON.parse(fs.readFileSync(0, 'utf8').trim());
-
-let left = 0;
-let right = height.length - 1;
-let best = 0;
-while (left < right) {
-  best = Math.max(best, Math.min(height[left], height[right]) * (right - left));
-  if (height[left] < height[right]) left += 1;
-  else right -= 1;
-}
-
-console.log(best);
-"""
-    if language == "java":
-        return """import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-public class Solution {
-    private static int[] parseIntArray(String raw) {
-        String cleaned = raw.trim();
-        if (cleaned.length() <= 2) return new int[0];
-        cleaned = cleaned.substring(1, cleaned.length() - 1);
-        String[] parts = cleaned.split(",");
-        int[] nums = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i].trim());
-        return nums;
-    }
-
-    public static void main(String[] args) throws Exception {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        int[] height = parseIntArray(br.readLine());
-        int left = 0;
-        int right = height.length - 1;
-        int best = 0;
-
-        while (left < right) {
-            best = Math.max(best, Math.min(height[left], height[right]) * (right - left));
-            if (height[left] < height[right]) left++;
-            else right--;
-        }
-
-        System.out.println(best);
-    }
-}
-"""
-    return """#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-using namespace std;
-
-vector<int> parseIntArray(string raw) {
-    vector<int> result;
-    if (raw.size() <= 2) return result;
-    raw = raw.substr(1, raw.size() - 2);
-    stringstream ss(raw);
-    string part;
-    while (getline(ss, part, ',')) result.push_back(stoi(part));
-    return result;
-}
-
-int main() {
-    string line;
-    getline(cin, line);
-    vector<int> height = parseIntArray(line);
-    int left = 0;
-    int right = static_cast<int>(height.size()) - 1;
-    int best = 0;
-
-    while (left < right) {
-        best = max(best, min(height[left], height[right]) * (right - left));
-        if (height[left] < height[right]) left++;
-        else right--;
-    }
-
-    cout << best << endl;
-    return 0;
-}
-"""
-
-
 PROBLEMS = [
     {
         "pattern_slug": "arrays",
@@ -1791,7 +442,7 @@ PROBLEMS = [
             {"input": "nums = [2, 7, 11, 15], target = 9", "output": "[0, 1]", "explanation": "nums[0] + nums[1] equals 9."},
             {"input": "nums = [3, 2, 4], target = 6", "output": "[1, 2]", "explanation": "2 + 4 equals 6."},
         ],
-        "starter_code_json": {lang: starter_two_sum(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("two-sum"),
         "test_cases": [
             {"label": "Example 1", "input": "[2, 7, 11, 15]\n9", "expected_output": "[0, 1]", "is_hidden": False},
             {"label": "Example 2", "input": "[3, 2, 4]\n6", "expected_output": "[1, 2]", "is_hidden": False},
@@ -1811,7 +462,7 @@ PROBLEMS = [
             {"input": "prices = [7, 1, 5, 3, 6, 4]", "output": "5", "explanation": "Buy at 1 and sell at 6."},
             {"input": "prices = [7, 6, 4, 3, 1]", "output": "0", "explanation": "No profitable transaction exists."},
         ],
-        "starter_code_json": {lang: starter_stock(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("best-time-to-buy-and-sell-stock"),
         "test_cases": [
             {"label": "Rising after dip", "input": "[7, 1, 5, 3, 6, 4]", "expected_output": "5", "is_hidden": False},
             {"label": "Always falling", "input": "[7, 6, 4, 3, 1]", "expected_output": "0", "is_hidden": False},
@@ -1831,7 +482,7 @@ PROBLEMS = [
             {"input": "nums = [0, 1, 0, 3, 12]", "output": "[1, 3, 12, 0, 0]", "explanation": "Non-zero values stay in order and zeroes shift right."},
             {"input": "nums = [0]", "output": "[0]", "explanation": "A single zero stays where it is."},
         ],
-        "starter_code_json": {lang: starter_move_zeroes(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("move-zeroes"),
         "test_cases": [
             {"label": "Classic example", "input": "[0, 1, 0, 3, 12]", "expected_output": "[1, 3, 12, 0, 0]", "is_hidden": False},
             {"label": "Already packed", "input": "[4, 1, 2]", "expected_output": "[4, 1, 2]", "is_hidden": False},
@@ -1851,7 +502,7 @@ PROBLEMS = [
             {"input": "nums = [1, 2, 3, 4]", "output": "[24, 12, 8, 6]", "explanation": "Each slot is the product of the other three values."},
             {"input": "nums = [-1, 1, 0, -3, 3]", "output": "[0, 0, 9, 0, 0]", "explanation": "The zero forces all other positions to zero except the zero index itself."},
         ],
-        "starter_code_json": {lang: starter_product_except_self(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("product-of-array-except-self"),
         "test_cases": [
             {"label": "Simple positives", "input": "[1, 2, 3, 4]", "expected_output": "[24, 12, 8, 6]", "is_hidden": False},
             {"label": "Contains zero", "input": "[-1, 1, 0, -3, 3]", "expected_output": "[0, 0, 9, 0, 0]", "is_hidden": False},
@@ -1871,7 +522,7 @@ PROBLEMS = [
             {"input": "s = \"A man, a plan, a canal: Panama\"", "output": "True", "explanation": "Ignoring punctuation gives 'amanaplanacanalpanama'."},
             {"input": "s = \"race a car\"", "output": "False", "explanation": "The cleaned string is not symmetric."},
         ],
-        "starter_code_json": {lang: starter_valid_palindrome(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("valid-palindrome"),
         "test_cases": [
             {"label": "Classic palindrome", "input": "A man, a plan, a canal: Panama", "expected_output": "True", "is_hidden": False},
             {"label": "Not a palindrome", "input": "race a car", "expected_output": "False", "is_hidden": False},
@@ -1891,7 +542,7 @@ PROBLEMS = [
             {"input": "numbers = [2, 7, 11, 15], target = 9", "output": "[1, 2]", "explanation": "The first two numbers sum to 9."},
             {"input": "numbers = [2, 3, 4], target = 6", "output": "[1, 3]", "explanation": "2 + 4 equals 6."},
         ],
-        "starter_code_json": {lang: starter_two_sum_sorted(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("two-sum-ii-sorted"),
         "test_cases": [
             {"label": "Example 1", "input": "[2, 7, 11, 15]\n9", "expected_output": "[1, 2]", "is_hidden": False},
             {"label": "Example 2", "input": "[2, 3, 4]\n6", "expected_output": "[1, 3]", "is_hidden": False},
@@ -1911,7 +562,7 @@ PROBLEMS = [
             {"input": "s = \"abcabcbb\"", "output": "3", "explanation": "The answer is 'abc'."},
             {"input": "s = \"bbbbb\"", "output": "1", "explanation": "Only one unique character can stay in the window."},
         ],
-        "starter_code_json": {lang: starter_longest_substring(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("longest-substring-without-repeating"),
         "test_cases": [
             {"label": "Repeating pattern", "input": "abcabcbb", "expected_output": "3", "is_hidden": False},
             {"label": "Single repeat", "input": "bbbbb", "expected_output": "1", "is_hidden": False},
@@ -1931,7 +582,7 @@ PROBLEMS = [
             {"input": "nums = [1, 12, -5, -6, 50, 3], k = 4", "output": "12.75", "explanation": "The subarray [12, -5, -6, 50] has the best average."},
             {"input": "nums = [5], k = 1", "output": "5.0", "explanation": "Only one window exists."},
         ],
-        "starter_code_json": {lang: starter_max_average(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("maximum-average-subarray"),
         "test_cases": [
             {"label": "Classic example", "input": "[1, 12, -5, -6, 50, 3]\n4", "expected_output": "12.75", "is_hidden": False},
             {"label": "Single value", "input": "[5]\n1", "expected_output": "5.0", "is_hidden": False},
@@ -1951,7 +602,7 @@ PROBLEMS = [
             {"input": "nums = [-1, 0, 3, 5, 9, 12], target = 9", "output": "4", "explanation": "9 is at index 4."},
             {"input": "nums = [-1, 0, 3, 5, 9, 12], target = 2", "output": "-1", "explanation": "2 is not present."},
         ],
-        "starter_code_json": {lang: starter_binary_search(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("binary-search"),
         "test_cases": [
             {"label": "Target present", "input": "[-1, 0, 3, 5, 9, 12]\n9", "expected_output": "4", "is_hidden": False},
             {"label": "Target absent", "input": "[-1, 0, 3, 5, 9, 12]\n2", "expected_output": "-1", "is_hidden": False},
@@ -1971,7 +622,7 @@ PROBLEMS = [
             {"input": "nums = [1, 3, 5, 6], target = 5", "output": "2", "explanation": "5 already exists at index 2."},
             {"input": "nums = [1, 3, 5, 6], target = 2", "output": "1", "explanation": "2 should be inserted between 1 and 3."},
         ],
-        "starter_code_json": {lang: starter_search_insert(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("search-insert-position"),
         "test_cases": [
             {"label": "Already present", "input": "[1, 3, 5, 6]\n5", "expected_output": "2", "is_hidden": False},
             {"label": "Insert in middle", "input": "[1, 3, 5, 6]\n2", "expected_output": "1", "is_hidden": False},
@@ -1991,7 +642,7 @@ PROBLEMS = [
             {"input": "s = \"hello\"", "output": "olleh", "explanation": "The characters are reversed."},
             {"input": "s = \"DebugMentor\"", "output": "rotneMgubeD", "explanation": "Case is preserved while order reverses."},
         ],
-        "starter_code_json": {lang: starter_reverse_string(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("reverse-string"),
         "test_cases": [
             {"label": "Simple word", "input": "hello", "expected_output": "olleh", "is_hidden": False},
             {"label": "With spaces", "input": "data structures", "expected_output": "serutcurts atad", "is_hidden": False},
@@ -2011,7 +662,7 @@ PROBLEMS = [
             {"input": "s = \"anagram\", t = \"nagaram\"", "output": "True", "explanation": "They contain the same letters with the same counts."},
             {"input": "s = \"rat\", t = \"car\"", "output": "False", "explanation": "The letter counts differ."},
         ],
-        "starter_code_json": {lang: starter_valid_anagram(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("valid-anagram"),
         "test_cases": [
             {"label": "Positive case", "input": "anagram\nnagaram", "expected_output": "True", "is_hidden": False},
             {"label": "Negative case", "input": "rat\ncar", "expected_output": "False", "is_hidden": False},
@@ -2031,7 +682,7 @@ PROBLEMS = [
             {"input": "n = 2", "output": "2", "explanation": "Either 1+1 or 2."},
             {"input": "n = 3", "output": "3", "explanation": "1+1+1, 1+2, or 2+1."},
         ],
-        "starter_code_json": {lang: starter_climbing_stairs(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("climbing-stairs"),
         "test_cases": [
             {"label": "Two steps", "input": "2", "expected_output": "2", "is_hidden": False},
             {"label": "Three steps", "input": "3", "expected_output": "3", "is_hidden": False},
@@ -2051,7 +702,7 @@ PROBLEMS = [
             {"input": "nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]", "output": "6", "explanation": "The best subarray is [4, -1, 2, 1]."},
             {"input": "nums = [1]", "output": "1", "explanation": "A single value is the best subarray."},
         ],
-        "starter_code_json": {lang: starter_max_subarray(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("maximum-subarray"),
         "test_cases": [
             {"label": "Kadane classic", "input": "[-2, 1, -3, 4, -1, 2, 1, -5, 4]", "expected_output": "6", "is_hidden": False},
             {"label": "Single element", "input": "[1]", "expected_output": "1", "is_hidden": False},
@@ -2071,7 +722,7 @@ PROBLEMS = [
             {"input": "height = [1, 8, 6, 2, 5, 4, 8, 3, 7]", "output": "49", "explanation": "The best container uses heights 8 and 7."},
             {"input": "height = [1, 1]", "output": "1", "explanation": "Only one container is possible."},
         ],
-        "starter_code_json": {lang: starter_container(lang) for lang in LANGUAGES},
+        "starter_code_json": program_starters("container-with-most-water"),
         "test_cases": [
             {"label": "Classic example", "input": "[1, 8, 6, 2, 5, 4, 8, 3, 7]", "expected_output": "49", "is_hidden": False},
             {"label": "Two bars", "input": "[1, 1]", "expected_output": "1", "is_hidden": False},
@@ -2080,11 +731,6 @@ PROBLEMS = [
         ],
     },
 ]
-
-
-for problem_payload in PROBLEMS:
-    problem_payload["reference_solution_json"] = problem_payload["starter_code_json"]
-    problem_payload["starter_code_json"] = leetcode_starters(problem_payload["slug"])
 
 
 def ensure_patterns(db):
@@ -2141,6 +787,8 @@ def upsert_problem(db, payload: Dict, pattern_map: Dict[str, int], order_index: 
     problem.difficulty = payload["difficulty"]
     problem.short_description = payload["short_description"]
     problem.statement = payload["statement"]
+    problem.input_format = problem_input_format(payload["slug"])
+    problem.output_format = problem_output_format(payload["slug"])
     problem.constraints_text = payload["constraints_text"]
     problem.examples_json = payload["examples_json"]
     problem.starter_code_json = payload["starter_code_json"]
