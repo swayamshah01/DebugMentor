@@ -1,6 +1,8 @@
 """User progress, submission history, and practice insights."""
 
 import logging
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
@@ -205,12 +207,16 @@ def get_profile(
             reason=f"You have a low mastery score in {item.pattern_name} ({item.mastery_percent:.0f}%).",
         ))
 
+    passed_days = {
+        submission.submitted_at.date()
+        for submission, _, _ in submissions
+        if submission.status == "passed" and submission.submitted_at
+    }
     recent_streak = 0
-    for sub, _, _ in submissions:
-        if sub.status == "passed":
-            recent_streak += 1
-        else:
-            break
+    streak_day = datetime.now(timezone.utc).date()
+    while streak_day in passed_days:
+        recent_streak += 1
+        streak_day -= timedelta(days=1)
 
     strongest_patterns = [item.pattern_name for item in sorted(weak_patterns, key=lambda item: item.mastery_percent, reverse=True)[:2]]
     weakest_patterns = [item.pattern_name for item in weak_patterns[:2]]

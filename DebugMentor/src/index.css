@@ -1148,6 +1148,7 @@ pre {
 
 .profile-avatar {
   display: inline-flex;
+  flex: 0 0 64px;
   width: 64px;
   height: 64px;
   align-items: center;
@@ -1370,6 +1371,19 @@ pre {
   .profile-heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .profile-identity {
+    align-items: flex-start;
+  }
+
+  .profile-identity > div {
+    min-width: 0;
+  }
+
+  .profile-identity h1,
+  .profile-identity p {
+    overflow-wrap: anywhere;
   }
 
   .progress-summary {

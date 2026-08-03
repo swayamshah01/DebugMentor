@@ -50,7 +50,7 @@ export default function OutputPanel({
           />
         )}
         {activePanel === 'result' && (
-          <ResultPanel result={gradeResult} requestError={requestError} />
+          <ResultPanel result={gradeResult} requestError={requestError} problem={problem} />
         )}
         {activePanel === 'hints' && (
           <HintsTab

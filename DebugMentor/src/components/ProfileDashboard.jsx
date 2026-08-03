@@ -12,6 +12,7 @@ export default function ProfileDashboard({ profile, loading, onRefresh, onPracti
   const stats = profile.stats || {}
   const weakPatterns = profile.weak_patterns || []
   const history = profile.submission_history || []
+  const streak = profile.readiness_snapshot?.recent_streak || 0
 
   return (
     <main className="profile-page">
@@ -34,7 +35,7 @@ export default function ProfileDashboard({ profile, loading, onRefresh, onPracti
         <div><span>Solved</span><strong>{profile.solved_problems_count || 0}</strong></div>
         <div><span>Submissions</span><strong>{stats.total_submissions || 0}</strong></div>
         <div><span>Pass rate</span><strong>{Math.round(stats.pass_rate || 0)}%</strong></div>
-        <div><span>Current streak</span><strong>{profile.readiness_snapshot?.recent_streak || 0} days</strong></div>
+        <div><span>Current streak</span><strong>{streak} {streak === 1 ? 'day' : 'days'}</strong></div>
       </section>
 
       <div className="profile-grid">
@@ -66,7 +67,7 @@ export default function ProfileDashboard({ profile, loading, onRefresh, onPracti
             <div className="badge-list">
               {profile.badges.map((badge) => (
                 <div className="badge-item" key={badge.id}>
-                  <span>{badge.label.slice(0, 2).toUpperCase()}</span>
+                  <span>{badge.icon || badge.label.slice(0, 2).toUpperCase()}</span>
                   <div><strong>{badge.label}</strong><small>{badge.description}</small></div>
                 </div>
               ))}

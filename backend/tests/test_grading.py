@@ -1,7 +1,7 @@
 from app.models.pattern import Pattern
 from app.models.problem import Problem
 from app.models.testcase import TestCase
-from app.services.grading import grade_problem, outputs_match, public_report
+from app.services.grading import _classify, grade_problem, outputs_match, public_report
 
 
 def create_problem(db_session):
@@ -44,6 +44,13 @@ def test_output_comparison_handles_structures_booleans_and_floats():
     assert outputs_match("true", "True")
     assert outputs_match("12.75", "12.7500001")
     assert not outputs_match("[0, 1]", "[1, 0]")
+
+
+def test_empty_output_passes_only_when_empty_is_expected():
+    execution = {"stage": "run", "exit_code": 0, "actual_output": ""}
+
+    assert _classify(execution, "") == "PASSED"
+    assert _classify(execution, "value") == "EMPTY_OUTPUT"
 
 
 def test_run_mode_grades_only_selected_visible_case(db_session):

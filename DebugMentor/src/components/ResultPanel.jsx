@@ -6,7 +6,14 @@ function statusLabel(status) {
 }
 
 
-export default function ResultPanel({ result, requestError }) {
+function caseLabel(item, index, problem) {
+  if (item.hidden) return `Hidden ${index + 1}`
+  const visibleIndex = (problem?.test_cases || []).findIndex((testCase) => testCase.id === item.id)
+  return `Case ${visibleIndex >= 0 ? visibleIndex + 1 : index + 1}`
+}
+
+
+export default function ResultPanel({ result, requestError, problem }) {
   const [selectedTestId, setSelectedTestId] = useState(null)
 
   if (requestError) {
@@ -50,7 +57,7 @@ export default function ResultPanel({ result, requestError }) {
                 key={`${item.id}-${index}`}
                 onClick={() => setSelectedTestId(item.id)}
               >
-                {item.hidden ? `Hidden ${index + 1}` : `Case ${index + 1}`}
+                {caseLabel(item, index, problem)}
               </button>
             ))}
           </div>

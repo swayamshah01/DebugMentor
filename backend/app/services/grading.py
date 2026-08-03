@@ -16,6 +16,13 @@ from app.models.testcase import TestCase
 
 
 _UNPARSED = object()
+_FAILURE_LABELS = {
+    "COMPILE_ERROR": ("compile error", "compile errors"),
+    "RUNTIME_ERROR": ("runtime error", "runtime errors"),
+    "TIMEOUT": ("timeout", "timeouts"),
+    "EMPTY_OUTPUT": ("empty output", "empty outputs"),
+    "WRONG_OUTPUT": ("wrong output", "wrong outputs"),
+}
 
 
 def _parse_structured(value: str) -> Any:
@@ -58,11 +65,12 @@ def _classify(execution: dict, expected_output: str) -> str:
         return "TIMEOUT"
     if execution.get("exit_code") != 0:
         return "RUNTIME_ERROR"
-    if not str(execution.get("actual_output", "")).strip():
+    actual_output = execution.get("actual_output", "")
+    if outputs_match(expected_output, actual_output):
+        return "PASSED"
+    if not str(actual_output).strip():
         return "EMPTY_OUTPUT"
-    if not outputs_match(expected_output, execution.get("actual_output", "")):
-        return "WRONG_OUTPUT"
-    return "PASSED"
+    return "WRONG_OUTPUT"
 
 
 def _load_cases(
@@ -127,12 +135,13 @@ def grade_problem(
 
     if failed:
         detail = ", ".join(
-            f"{count} {status.replace('_', ' ').lower()}"
+            f"{count} {_FAILURE_LABELS.get(status, (status.lower(), status.lower()))[count != 1]}"
             for status, count in sorted(failures.items())
         )
-        summary = f"{failed} of {len(test_results)} tests failed: {detail}."
+        test_label = "test" if len(test_results) == 1 else "tests"
+        summary = f"{failed} of {len(test_results)} {test_label} failed: {detail}."
     else:
-        summary = f"All {len(test_results)} tests passed."
+        summary = "The test passed." if len(test_results) == 1 else f"All {len(test_results)} tests passed."
 
     return {
         "total": len(test_results),
