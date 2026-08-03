@@ -2,8 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-
-SUPPORTED_LANGUAGES = {"python", "javascript", "java", "cpp"}
+from app.languages import SUPPORTED_LANGUAGES
 
 
 class CodePayload(BaseModel):

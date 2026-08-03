@@ -16,9 +16,9 @@ import time
 from pathlib import Path
 
 from app.config import settings
+from app.languages import SUPPORTED_LANGUAGES
 
 
-SUPPORTED_LANGUAGES = {"python", "javascript", "java", "cpp"}
 BLOCKED_PYTHON_MODULES = {"ctypes", "multiprocessing", "os", "pathlib", "shutil", "socket", "subprocess"}
 MAX_CAPTURED_OUTPUT = 64_000
 

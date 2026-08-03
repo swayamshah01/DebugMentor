@@ -14,7 +14,12 @@ export default function ProblemStatement({ problem, loading }) {
   }
 
   const constraints = String(problem.constraints || '')
-    .split(',')
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  const paragraphs = String(problem.statement || '')
+    .split(/\n{2,}/)
     .map((item) => item.trim())
     .filter(Boolean)
 
@@ -23,28 +28,31 @@ export default function ProblemStatement({ problem, loading }) {
       <article className="problem-content">
         <header className="problem-heading">
           <div className="problem-meta">
-            <span>{problem.pattern?.name}</span>
+            <span className="problem-pattern">{problem.pattern?.name}</span>
             <span className={`difficulty difficulty-${problem.difficulty}`}>{problem.difficulty}</span>
           </div>
           <h1>{problem.title}</h1>
-          {problem.short_description && <p className="problem-summary">{problem.short_description}</p>}
         </header>
 
-        <section className="statement-section">
-          <h2>Problem</h2>
-          <p>{problem.statement}</p>
+        <section className="statement-section statement-copy">
+          {paragraphs.map((paragraph, index) => <p key={`${paragraph}-${index}`}>{paragraph}</p>)}
         </section>
 
-        <section className="statement-section format-section">
-          <div>
-            <h2>Input format</h2>
-            <pre>{problem.input_format || 'Read the values from standard input.'}</pre>
-          </div>
-          <div>
-            <h2>Output format</h2>
-            <pre>{problem.output_format || 'Print the required answer.'}</pre>
-          </div>
-        </section>
+        {problem.examples?.length > 0 && (
+          <section className="statement-section">
+            <h2>Examples</h2>
+            <div className="example-list">
+              {problem.examples.map((example, index) => (
+                <div className="example-block" key={`${example.input}-${index}`}>
+                  <h3>Example {index + 1}</h3>
+                  <div className="example-value"><strong>Input:</strong><pre>{example.input}</pre></div>
+                  <div className="example-value"><strong>Output:</strong><pre>{example.output}</pre></div>
+                  {example.explanation && <p><strong>Explanation:</strong> {example.explanation}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {constraints.length > 0 && (
           <section className="statement-section">
@@ -57,23 +65,19 @@ export default function ProblemStatement({ problem, loading }) {
           </section>
         )}
 
-        {problem.examples?.length > 0 && (
-          <section className="statement-section">
-            <h2>Examples</h2>
-            <div className="example-list">
-              {problem.examples.map((example, index) => (
-                <div className="example-block" key={`${example.input}-${index}`}>
-                  <strong>Example {index + 1}</strong>
-                  <dl>
-                    <dt>Input</dt><dd><pre>{example.input}</pre></dd>
-                    <dt>Output</dt><dd><pre>{example.output}</pre></dd>
-                  </dl>
-                  {example.explanation && <p>{example.explanation}</p>}
-                </div>
-              ))}
+        <section className="statement-section">
+          <h2>Console input and output</h2>
+          <div className="io-specification">
+            <div>
+              <h3>Input</h3>
+              <pre>{problem.input_format || 'Read the values from standard input.'}</pre>
             </div>
-          </section>
-        )}
+            <div>
+              <h3>Output</h3>
+              <pre>{problem.output_format || 'Print the required answer.'}</pre>
+            </div>
+          </div>
+        </section>
       </article>
     </aside>
   )

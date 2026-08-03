@@ -6,7 +6,7 @@ from app.database import Base
 
 
 class Problem(Base):
-    """A database-backed practice problem and its language templates."""
+    """A database-backed practice problem."""
 
     __tablename__ = "problems"
 
@@ -21,7 +21,6 @@ class Problem(Base):
     output_format = Column(Text, nullable=True)
     constraints_text = Column(Text, nullable=True)
     examples_json = Column(JSON, nullable=True)
-    starter_code_json = Column(JSON, nullable=True)
     order_index = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

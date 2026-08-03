@@ -30,7 +30,6 @@ def create_catalog(db_session):
         statement="Read n and print n + 1.",
         input_format="Line 1: n - an integer.",
         output_format="Print one integer.",
-        starter_code_json={"python": PASSING_PROGRAM},
         order_index=1,
     )
     db_session.add(problem)
@@ -67,6 +66,8 @@ def test_catalog_returns_formats_and_never_exposes_hidden_cases(api_client, db_s
     assert response.status_code == 200
     payload = response.json()
     assert payload["input_format"] == "Line 1: n - an integer."
+    assert "starter_code_map" not in payload
+    assert payload["available_languages"] == ["python", "javascript", "java", "cpp"]
     assert payload["test_cases"] == [
         {
             "id": visible.id,

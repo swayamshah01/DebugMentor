@@ -32,7 +32,7 @@ export default function CodeEditorPanel({
           <span className="file-language">{config.icon}</span>
           <strong>{FILE_NAMES[language] || 'main.txt'}</strong>
         </div>
-        <span className="entry-contract">stdin / stdout</span>
+        <span className="entry-contract">Complete program</span>
       </header>
 
       <div className="editor-canvas">
@@ -64,7 +64,7 @@ export default function CodeEditorPanel({
       </div>
 
       <footer className="editor-toolbar">
-        <span className="editor-status">{code.trim() ? 'Ready' : 'Add your solution to continue'}</span>
+        <span className="editor-status">{code.trim() ? 'Ready' : 'Editor is empty'}</span>
         <div className="editor-actions">
           <button className="button button-secondary" disabled={disabled} type="button" onClick={onRun}>
             {busyAction === 'run' ? 'Running' : `Run case ${selectedCaseNumber || 1}`}

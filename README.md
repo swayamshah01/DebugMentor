@@ -18,8 +18,7 @@ and prints standard output.
 - Pattern-based problem explorer backed by PostgreSQL
 - 15 curated DSA problems across 6 patterns
 - 60 real test cases, with 2 visible and 2 hidden cases per problem
-- Complete-program starters for Python, JavaScript, Java, and C++
-- Monaco code editor with a single file per problem
+- Blank Monaco editor for complete Python, JavaScript, Java, and C++ programs
 - Compile, runtime, timeout, empty-output, and wrong-output reporting
 - Final submission history, pattern progress, pass rate, and earned badges
 - JWT authentication with unique usernames and emails
@@ -222,7 +221,7 @@ python -m alembic current
 python -m alembic heads
 ```
 
-Both commands should report `d5e6f7a8b9c0` as the single head.
+Both commands should report `e7f8a9b0c1d2` as the single head.
 
 ## Adding Problems
 
@@ -231,7 +230,6 @@ Curated problem content lives in `backend/seed_data.py`. A problem must include:
 - a unique slug and pattern
 - a clear statement and input/output format
 - constraints and examples
-- starter programs for all four languages
 - visible and hidden stdin/stdout test cases
 
 After changing curated content, restart the backend or run:

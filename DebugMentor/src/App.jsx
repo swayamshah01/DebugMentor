@@ -128,7 +128,7 @@ export default function App() {
       const draftKey = `${detail.id}:${nextLanguage}`
       setProblem(detail)
       setLanguage(nextLanguage)
-      setCode(drafts[draftKey] ?? detail.starter_code_map?.[nextLanguage] ?? '')
+      setCode(drafts[draftKey] ?? '')
       setSelectedTestCaseId(detail.test_cases?.[0]?.id ?? null)
       setActivePanel('tests')
     }
@@ -139,7 +139,7 @@ export default function App() {
     if (!problem) return
     setDrafts((current) => ({ ...current, [`${problem.id}:${language}`]: code }))
     setLanguage(nextLanguage)
-    setCode(drafts[`${problem.id}:${nextLanguage}`] ?? problem.starter_code_map?.[nextLanguage] ?? '')
+    setCode(drafts[`${problem.id}:${nextLanguage}`] ?? '')
     resetPractice()
     setActivePanel('tests')
   }, [code, drafts, language, problem, resetPractice])

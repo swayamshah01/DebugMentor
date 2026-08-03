@@ -5,6 +5,7 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
+from app.languages import SUPPORTED_LANGUAGES
 from app.models.pattern import Pattern
 from app.models.problem import Problem
 from app.models.testcase import TestCase
@@ -90,8 +91,6 @@ def get_problem_detail(problem_id: int, db: Session = Depends(get_db)) -> dict:
         .order_by(TestCase.order_index)
         .all()
     )
-    starter_code = problem.starter_code_json or {}
-
     return {
         "id": problem.id,
         "title": problem.title,
@@ -103,12 +102,7 @@ def get_problem_detail(problem_id: int, db: Session = Depends(get_db)) -> dict:
         "output_format": problem.output_format,
         "constraints": problem.constraints_text,
         "examples": problem.examples_json or [],
-        "starter_code_map": starter_code,
-        "available_languages": [
-            language
-            for language in ("python", "javascript", "java", "cpp")
-            if language in starter_code
-        ],
+        "available_languages": list(SUPPORTED_LANGUAGES),
         "pattern": {
             "id": problem.pattern.id,
             "name": problem.pattern.name,

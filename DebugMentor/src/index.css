@@ -327,8 +327,7 @@ pre {
 }
 
 .auth-copy p,
-.page-heading p,
-.problem-summary {
+.page-heading p {
   margin: 7px 0 0;
   color: var(--text-muted);
 }
@@ -656,61 +655,60 @@ pre {
 }
 
 .problem-content {
-  padding: 24px;
+  padding: 26px 28px 34px;
 }
 
 .problem-heading {
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
 }
 
 .problem-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
   color: var(--text-muted);
   font-size: 12px;
 }
 
+.problem-pattern {
+  font-weight: 700;
+}
+
 .problem-heading h1 {
-  font-size: 25px;
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
 }
 
 .statement-section {
-  padding: 20px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.statement-section:last-child {
-  border-bottom: 0;
+  padding: 18px 0 4px;
 }
 
 .statement-section h2,
 .profile-section h2 {
-  margin: 0 0 10px;
-  font-size: 14px;
+  margin: 0 0 14px;
+  font-size: 15px;
 }
 
 .statement-section p {
   margin: 0;
-  color: var(--text-muted);
-  line-height: 1.75;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
 }
 
-.format-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+.statement-copy {
+  padding-top: 12px;
 }
 
-.format-section > div {
-  min-width: 0;
+.statement-copy p + p {
+  margin-top: 14px;
 }
 
-.format-section pre,
-.example-block pre,
+.io-specification pre,
+.example-value pre,
 .case-values pre,
 .result-values pre {
   margin: 0;
@@ -726,8 +724,10 @@ pre {
   display: grid;
   gap: 8px;
   margin: 0;
-  padding-left: 20px;
-  color: var(--text-muted);
+  padding: 14px 16px 14px 34px;
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text);
   font-family: var(--mono);
   font-size: 12px;
 }
@@ -738,43 +738,54 @@ pre {
 
 .example-list {
   display: grid;
-  gap: 12px;
+  gap: 22px;
 }
 
 .example-block {
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
+  padding-left: 16px;
+  border-left: 2px solid var(--border-strong);
 }
 
-.example-block > strong {
-  display: block;
-  margin-bottom: 10px;
+.example-block h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
 }
 
-.example-block dl {
+.example-value {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: start;
   gap: 8px;
-  margin: 0;
+  margin-top: 7px;
 }
 
-.example-block dt {
-  padding-top: 8px;
-  color: var(--text-faint);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.example-block dd {
-  min-width: 0;
-  margin: 0;
+.example-value > strong {
+  padding-top: 9px;
+  font-size: 12px;
 }
 
 .example-block p {
-  margin-top: 10px;
+  margin-top: 9px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.example-block p strong {
+  color: var(--text);
+}
+
+.io-specification {
+  display: grid;
+  gap: 12px;
+}
+
+.io-specification > div {
+  min-width: 0;
+}
+
+.io-specification h3 {
+  margin: 0 0 6px;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -1423,7 +1434,6 @@ pre {
     padding: 18px;
   }
 
-  .format-section,
   .case-values,
   .result-values {
     grid-template-columns: 1fr;
